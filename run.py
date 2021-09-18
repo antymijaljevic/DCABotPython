@@ -51,7 +51,7 @@ def buyAda():
     type = 'market'  # or 'limt'
     side = 'buy'  # or 'sell'
     amount = 1 # ignore this one
-    price = 1  # dollar investment every day
+    price = 10  # dollar investment every day
     try:
         data = exchange.create_order(symbol, type, side, amount, price)
         #send report
@@ -66,7 +66,7 @@ def buySol():
     type = 'market'  # or 'limit'
     side = 'buy'  # or 'sell'
     amount = 1 # ignore this one
-    price = 1  # dollar investment every day
+    price = 10  # dollar investment every day
     try:
         data = exchange.create_order(symbol, type, side, amount, price)
         #send report    
