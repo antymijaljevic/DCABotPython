@@ -21,5 +21,4 @@ ccxt, telegram_send, schedule, while time and multiprocessing are built-in
 To do:
 
 *add pysheet feature so that purchasing data goes into spreadsheet
-*encrypt api key before script running on server
-
+*encrypt api key before running the script on a server
