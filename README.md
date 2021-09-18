@@ -13,3 +13,13 @@ follow guide on https://medium.com/@robertbracco1/how-to-write-a-telegram-bot-to
 3|
 Install python 3.9 and necessary liberies with 'pip3 install [packet]' command
 ccxt, telegram_send, schedule, while time and multiprocessing are built-in
+
+
+
+*****************************************************************************
+
+To do:
+
+*add pysheet feature so that purchasing data goes into spreadsheet
+*encrypt api key before script running on server
+

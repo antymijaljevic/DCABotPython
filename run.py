@@ -26,17 +26,24 @@ def lastPrices():
 	priceReport = "***CURRENT PRICES***\n\n" + "ADA >> " + str(round(currentAdaPrice['last'], 2))+"$" + "\n" + "SOL >> " + str(round(currentSolPrice['last'], 2))+"$"
 	telegram_send.send(messages=[priceReport])
 
-#if there is dip more than -10% it notifies you to invest extra money manually
-#for this method please check google spreadsheet which I shared with you "Every day 10$ + 60$ on -10% dips"
+#for this method please check google spreadsheet which I shared with you  sheet"Every day 10$ + 60$ on -10% dips"
 def percentageReport():
-	currentAdaPrice = exchange.fetch_ticker('ADA/BUSD')
-	currentAdaPrice = float(currentAdaPrice['info']['priceChangePercent'])
-	currentSolPrice = exchange.fetch_ticker('SOL/BUSD')
-	currentSolPrice = float(currentSolPrice['info']['priceChangePercent'])
-	currentPercentages = "***CURRENT PERCENTAGES***\n\n" + "ADA >> " + str(round(currentAdaPrice, 2)) + " %" + "\nSOL >> " + str(round(currentSolPrice, 2)) + " %\n\nDo you want to invest more?"
-	telegram_send.send(messages=[currentPercentages])
+    ada = exchange.fetch_ticker('ADA/BUSD')
+    ada = round(float(ada['info']['priceChangePercent']), 2)
+    sol = exchange.fetch_ticker('SOL/BUSD')
+    sol = round(float(sol['info']['priceChangePercent']), 2)
+    #alert message
+    alert = "***DIP ALERT!***\n\n" + "ADA >> " + str(ada) + " %" + "\nSOL >> " + str(sol) + " %\n\nDo you want to invest more?"
+
+    #if there is dip more than -10% it notifies you to invest extra money manually
+    if ada -9.99 or sol < -9.99:
+        telegram_send.send(messages=[alert])
+        #possible call on buyAda function with 60$ extra or let user to buy manually
+    else:
+        pass
 
 #buy or sell ada
+#I have in plan to implement pysheet library to save data directly to google spreadsheet
 def buyAda():
     symbol = 'ADA/BUSD'  
     type = 'market'  # or 'limt'
@@ -66,11 +73,13 @@ if __name__ == '__main__':
 
     #set specific time to repeat the processes
     #first process is buying ada for $10 dollars per day
-    schedule.every().day.at("04:00").do(first_process.run)
-    
-    #second process is sending report about incoming dips
-    schedule.every(12).hours.do(second_process.run)
+    # schedule.every().day.at("04:00").do(first_process.run)
 
+    #second process is sending report about incoming dips
+    #schedule.every(12).hours.do(second_process.run)
+
+    #testing
+    # schedule.every(5).seconds.do(second_process.run)
 
     #if needed
     # schedule.every(3).seconds.do(job)
