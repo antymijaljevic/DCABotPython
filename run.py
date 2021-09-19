@@ -11,6 +11,9 @@ exchange = ccxt.binance({
     'enableRateLimit': True,
 })
 
+#timestamp
+now = str(datetime.now())
+
 #trading set up
 orderOnePair = 'ADA/BUSD'
 orderTwoPair = 'SOL/BUSD'
@@ -20,8 +23,6 @@ orderTwoInvestment = 10
 #time of buying every day
 orderOne = "01:15"
 orderTwo = "01:15"
-#timestamp
-now = str(datetime.now())
 
 
 #spot wallet balance
@@ -49,7 +50,7 @@ def percentageReport():
     alert = "***DIP ALERT!***\n\n" + "DATE: " + now[:16] + "\n" + orderOnePair[0:3] + " >> " + str(firstPairP) + " %\n" + orderTwoPair[0:3] + " >> " + str(secondPairP) + " %\n\nDo you want to invest more?"
 
     #if there is dip more than -10% it notifies you to invest extra money manually
-    if firstPairP < 1 or secondPairP < -9.99:
+    if firstPairP < -9.99 or secondPairP < -9.99:
         telegram_send.send(messages=[alert])
         #possible call on buyAda function with 60$ extra or let user to buy manually
     else:
@@ -65,12 +66,12 @@ def order_1():
     price = orderOneInvestment
     try:
         data = exchange.create_order(symbol, type, side, amount, price)
+        filledAt = float(data['info']['fills'][0]['price'])
         #send report
-        report = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Amount: " + str(data.get('amount')) + orderOnePair[:3] + "\n" + "Cost: " + str(data.get('cost')) + " $"
+        report = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $ \n" + "Amount: " + str(data.get('amount')) + " " + orderOnePair[:3] + "\n" + "Cost: " + str(data.get('cost')) + " $"
         telegram_send.send(messages=[report])
     except:
-        telegram_send.send(messages=["Binance API connection issue!\nADA buying order failed"])
-
+        telegram_send.send(messages=["Binance API connection issue!\n" + orderOnePair +  " buying order has failed!"])
 #second pair trade
 def order_2():
     symbol = orderTwoPair  
@@ -80,11 +81,12 @@ def order_2():
     price = orderTwoInvestment
     try:
         data = exchange.create_order(symbol, type, side, amount, price)
+        filledAt = float(data['info']['fills'][0]['price'])
         #send report    
-        report = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Amount: " + str(data.get('amount')) + orderTwoPair[:3] + "\n" + "Cost: " + str(data.get('cost')) + " $"
+        report = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $\n" + "Amount: " + str(data.get('amount')) + " " + orderTwoPair[:3] + "\n" + "Cost: " + str(data.get('cost')) + " $"
         telegram_send.send(messages=[report])
     except:
-        telegram_send.send(messages=["Binance API connection issue!\nSOL buying order failed"])
+        telegram_send.send(messages=["Binance API connection issue!\n" + orderTwoPair +  " buying order has failed!"])
 
 if __name__ == '__main__':
     # multiprocessing 1|spot wallet 2| last price ada/sol 3| dip alert 4| first pair trade 5| second pair trade
@@ -92,33 +94,33 @@ if __name__ == '__main__':
     second_process = multiprocessing.Process(name='second_process', target=lastPrices)
     third_process = multiprocessing.Process(name='third_process', target=percentageReport)
     fourth_process = multiprocessing.Process(name='fourth_process', target=order_1)
-    fifth_process = multiprocessing.Process(name='fifth_process', target=orderTwoPair)
+    fifth_process = multiprocessing.Process(name='fifth_process', target=order_2)
 
     #running processes/functions in different times
     #https://schedule.readthedocs.io/en/stable/examples.html
 
-    # # 1| Spot wallet report
-    # schedule.every().day.at("12:00").do(first_process.run)
-    # # 2| last price ada/sol
-    # schedule.every(2).hours.do(second_process.run)
-    # # 3| dip alert
-    # schedule.every(4).hours.do(third_process.run)
-    # # 4| first pair trade
-    # schedule.every().day.at(orderOne).do(fourth_process.run)
-    # # 5| second pair trade
-    # schedule.every().day.at(orderTwo).do(fifth_process.run)
+    # 1| Spot wallet report
+    schedule.every(12).hours.do(first_process.run)
+    # 2| last pairs prices
+    schedule.every(3).hours.do(second_process.run)
+    # 3| dip alert
+    schedule.every(4).hours.do(third_process.run)
+    # 4| first pair trade
+    schedule.every().day.at(orderOne).do(fourth_process.run)
+    # 5| second pair trade
+    schedule.every().day.at(orderTwo).do(fifth_process.run)
 
-    #only for testing purposes
-    #spot wallet report
-    # schedule.every(3).seconds.do(first_process.run)
-    # #last price report
-    # schedule.every(3).seconds.do(second_process.run)
-    # #dip alert
-    schedule.every(3).seconds.do(third_process.run)
-    # #buy ada
-    # schedule.every(3).seconds.do(fourth_process.run)
-    # #buy sol
-    # schedule.every(3).seconds.do(fifth_process.run)
+    # # #only for testing purposes
+    # #spot wallet report
+    # schedule.every(5).seconds.do(first_process.run)
+    # # #last price report
+    # schedule.every(5).seconds.do(second_process.run)
+    # # #dip alert
+    # schedule.every(5).seconds.do(third_process.run)
+    # # first pair trade
+    # schedule.every(5).seconds.do(fourth_process.run)
+    # # second pair trade
+    # schedule.every(5).seconds.do(fifth_process.run)
 
     schedule.run_pending()
 
