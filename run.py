@@ -1,6 +1,6 @@
 #written by antymijaljevic@gmail.com
 
-import ccxt, telegram_send, schedule, time, multiprocessing
+import ccxt, telegram_send, schedule, time, multiprocessing, gspread
 from keys import API_KEY, SECRET
 from datetime import datetime
 
@@ -10,6 +10,13 @@ exchange = ccxt.binance({
     'secret': SECRET,
     'enableRateLimit': True,
 })
+
+#connecting on the google spreadsheet
+spreadsheet_credentials = gspread.service_account(filename='sheet_credentials.json')
+spreadsheet_id = spreadsheet_credentials.open_by_key('1e-I7RvxlIU3SvvW4i5OD3GCVPqj5Ka5anDbyUOc93oY')
+order_1_sheet = spreadsheet_id.get_worksheet(0)
+order_2_sheet = spreadsheet_id.get_worksheet(1)
+report_sheet = spreadsheet_id.get_worksheet(2)
 
 #timestamp
 now = str(datetime.now())
@@ -31,7 +38,7 @@ def walletBalance():
 	balancePrint = "***SPOT WALLET BALANCE***\n\n" + "Date: " + now[:16] + "\n" +  "BUSD = " + str(int(balance['BUSD'])) + "$" + "\n" + orderOnePair[:3] + " = " + str(int(balance[orderOnePair[:3]])) + " " + orderOnePair[:1]  + "\n" + orderTwoPair[:3] + " = " + str(int(balance[orderTwoPair[:3]])) + " " + orderTwoPair[0:1]
 	#telegram notification
 	telegram_send.send(messages=[balancePrint])
-
+    #print('Spot wallet report ... DONE', now[:16])
 
 #prices of the pairs telegram notification
 def lastPrices():
@@ -51,13 +58,16 @@ def percentageReport():
 
     #if there is dip more than -10% it notifies you to invest extra money manually
     if firstPairP < -9.99 or secondPairP < -9.99:
+        #send reports to telegram and to sheet
         telegram_send.send(messages=[alert])
-        #possible call on buyAda function with 60$ extra or let user to buy manually
+        sheetReport1 = now[:16], orderOnePair[0:3], str(firstPairP)+"%"
+        report_sheet.append_row(sheetReport1)
+        sheetReport2 = now[:16], orderTwoPair[0:3], str(secondPairP)+"%"
+        report_sheet.append_row(sheetReport2)
     else:
-        print("SCRIPT STATUS ... OK", now[:16])
+        print("No extreme percentage ... STATUS OK", now[:16])
 
 #first pair trade
-#I have in plan to implement pysheet library to save data directly to google spreadsheet
 def order_1():
     symbol = orderOnePair
     type = 'market'  # or 'limt'
@@ -67,9 +77,13 @@ def order_1():
     try:
         data = exchange.create_order(symbol, type, side, amount, price)
         filledAt = float(data['info']['fills'][0]['price'])
-        #send report
-        report = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $ \n" + "Amount: " + str(data.get('amount')) + " " + orderOnePair[:3] + "\n" + "Cost: " + str(round(data.get('cost'), 2)) + " $"
-        telegram_send.send(messages=[report])
+        commissionRate = float(data['info']['fills'][0]['commission'])
+        #send reports to telegram and to sheet
+        telReport = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $ \n" + "Amount: " + str(data.get('amount')) + " " + orderOnePair[:3] + "\n" + "Invested: " + str(round(data.get('cost'), 2)) + " $"
+        telegram_send.send(messages=[telReport])
+        sheetReport = now[:10], now[11:16], float(filledAt), round(data.get('cost'), 2), float(commissionRate), data.get('amount')
+        order_1_sheet.append_row(sheetReport)
+
     except:
         telegram_send.send(messages=["Binance API connection issue!\n" + orderOnePair +  " buying order has failed!"])
 #second pair trade
@@ -82,9 +96,12 @@ def order_2():
     try:
         data = exchange.create_order(symbol, type, side, amount, price)
         filledAt = float(data['info']['fills'][0]['price'])
-        #send report    
-        report = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $\n" + "Amount: " + str(data.get('amount')) + " " + orderTwoPair[:3] + "\n" + "Cost: " + str(round(data.get('cost'), 2)) + " $"
-        telegram_send.send(messages=[report])
+        commissionRate = float(data['info']['fills'][0]['commission'])
+        #send reports to telegram and to sheet   
+        telReport = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $\n" + "Amount: " + str(data.get('amount')) + " " + orderTwoPair[:3] + "\n" + "Invested: " + str(round(data.get('cost'), 2)) + " $"
+        telegram_send.send(messages=[telReport])
+        sheetReport = now[:10], now[11:16], float(filledAt), round(data.get('cost'), 2), float(commissionRate), data.get('amount')
+        order_2_sheet.append_row(sheetReport)
     except:
         telegram_send.send(messages=["Binance API connection issue!\n" + orderTwoPair +  " buying order has failed!"])
 
@@ -110,12 +127,12 @@ if __name__ == '__main__':
     # 5| second pair trade
     schedule.every().day.at(orderTwo).do(fifth_process.run)
 
-    # # #only for testing purposes
+    # #only for testing purposes
     # #spot wallet report
     # schedule.every(5).seconds.do(first_process.run)
-    # # #last price report
+    # #last price report
     # schedule.every(5).seconds.do(second_process.run)
-    # # #dip alert
+    #dip alert
     # schedule.every(5).seconds.do(third_process.run)
     # # first pair trade
     # schedule.every(5).seconds.do(fourth_process.run)
