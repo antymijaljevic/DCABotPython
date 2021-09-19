@@ -28,7 +28,7 @@ orderTwo = "01:15"
 #spot wallet balance
 def walletBalance():
 	balance = exchange.fetch_total_balance()
-	balancePrint = "***SPOT WALLET BALANCE***\n\n" + "DATE: " + now[:16] + "\n" +  "BUSD = " + str(int(balance['BUSD'])) + "$" + "\n" + orderOnePair[:3] + " = " + str(int(balance[orderOnePair[:3]])) + " " + orderOnePair[:1]  + "\n" + orderTwoPair[:3] + " = " + str(int(balance[orderTwoPair[:3]])) + " " + orderTwoPair[0:1]
+	balancePrint = "***SPOT WALLET BALANCE***\n\n" + "Date: " + now[:16] + "\n" +  "BUSD = " + str(int(balance['BUSD'])) + "$" + "\n" + orderOnePair[:3] + " = " + str(int(balance[orderOnePair[:3]])) + " " + orderOnePair[:1]  + "\n" + orderTwoPair[:3] + " = " + str(int(balance[orderTwoPair[:3]])) + " " + orderTwoPair[0:1]
 	#telegram notification
 	telegram_send.send(messages=[balancePrint])
 
@@ -37,7 +37,7 @@ def walletBalance():
 def lastPrices():
 	pairOnePrice = exchange.fetch_ticker(orderOnePair)
 	pairTwoPrice = exchange.fetch_ticker(orderTwoPair)
-	priceReport = "***CURRENT PRICES***\n\n" + "DATE: " + now[:16] + "\n" + orderOnePair[:3] + " >> " + str(round(pairOnePrice['last'], 2))+"$" + "\n" + orderTwoPair[:3] + " >> " + str(round(pairTwoPrice['last'], 2))+"$"
+	priceReport = "***CURRENT PRICES***\n\n" + "Date: " + now[:16] + "\n" + orderOnePair[:3] + " >> " + str(round(pairOnePrice['last'], 2))+"$" + "\n" + orderTwoPair[:3] + " >> " + str(round(pairTwoPrice['last'], 2))+"$"
 	telegram_send.send(messages=[priceReport])
 
 #for this method please check google spreadsheet which I shared with you, sheet"Every day 10$ + 60$ on -10% dips"
@@ -47,7 +47,7 @@ def percentageReport():
     secondPair = exchange.fetch_ticker(orderTwoPair)
     secondPairP = round(float(secondPair['info']['priceChangePercent']), 2)
     #alert message
-    alert = "***DIP ALERT!***\n\n" + "DATE: " + now[:16] + "\n" + orderOnePair[0:3] + " >> " + str(firstPairP) + " %\n" + orderTwoPair[0:3] + " >> " + str(secondPairP) + " %\n\nDo you want to invest more?"
+    alert = "***DIP ALERT!***\n\n" + "Date: " + now[:16] + "\n" + orderOnePair[0:3] + " >> " + str(firstPairP) + " %\n" + orderTwoPair[0:3] + " >> " + str(secondPairP) + " %\n\nDo you want to invest more?"
 
     #if there is dip more than -10% it notifies you to invest extra money manually
     if firstPairP < -9.99 or secondPairP < -9.99:
@@ -68,7 +68,7 @@ def order_1():
         data = exchange.create_order(symbol, type, side, amount, price)
         filledAt = float(data['info']['fills'][0]['price'])
         #send report
-        report = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $ \n" + "Amount: " + str(data.get('amount')) + " " + orderOnePair[:3] + "\n" + "Cost: " + str(data.get('cost')) + " $"
+        report = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $ \n" + "Amount: " + str(data.get('amount')) + " " + orderOnePair[:3] + "\n" + "Cost: " + str(round(data.get('cost'), 2)) + " $"
         telegram_send.send(messages=[report])
     except:
         telegram_send.send(messages=["Binance API connection issue!\n" + orderOnePair +  " buying order has failed!"])
@@ -83,7 +83,7 @@ def order_2():
         data = exchange.create_order(symbol, type, side, amount, price)
         filledAt = float(data['info']['fills'][0]['price'])
         #send report    
-        report = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $\n" + "Amount: " + str(data.get('amount')) + " " + orderTwoPair[:3] + "\n" + "Cost: " + str(data.get('cost')) + " $"
+        report = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $\n" + "Amount: " + str(data.get('amount')) + " " + orderTwoPair[:3] + "\n" + "Cost: " + str(round(data.get('cost'), 2)) + " $"
         telegram_send.send(messages=[report])
     except:
         telegram_send.send(messages=["Binance API connection issue!\n" + orderTwoPair +  " buying order has failed!"])
