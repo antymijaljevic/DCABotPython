@@ -1,151 +1,106 @@
-#written by antymijaljevic@gmail.com
+# written by antymijaljevic@gmail.com
 
+# necessary libraries and API keys variables
 import ccxt, telegram_send, schedule, time, multiprocessing, gspread
-from keys import API_KEY, SECRET
 from datetime import datetime
+from keys import API_KEY, SECRET
 
-#connecting on binance using ccxt library
+
+# call on binance using ccxt library
 exchange = ccxt.binance({
     'apiKey': API_KEY,
     'secret': SECRET,
     'enableRateLimit': True,
 })
-
-#connecting on the google spreadsheet
-spreadsheet_credentials = gspread.service_account(filename='sheet_credentials.json')
-spreadsheet_id = spreadsheet_credentials.open_by_key('1e-I7RvxlIU3SvvW4i5OD3GCVPqj5Ka5anDbyUOc93oY')
-order_1_sheet = spreadsheet_id.get_worksheet(0)
-order_2_sheet = spreadsheet_id.get_worksheet(1)
-report_sheet = spreadsheet_id.get_worksheet(2)
-
-#trading set up
-orderOnePair = 'ADA/BUSD'
+# set TRUE for the binance testnet, and set test pairs
+exchange.set_sandbox_mode(True)
+orderOnePair = 'BTC/BUSD' # bug 1 regEx
 orderTwoPair = 'ETH/BUSD'
-#investment
+
+# timestamp
+now = str(datetime.now())
+
+# to be set up manually depends about user needs
+# trading pairs set up
+# orderOnePair = 'ADA/BUSD'
+# orderTwoPair = 'ETH/BUSD'
+# investment amount
 orderOneInvestment = 10
 orderTwoInvestment = 10
-#time of buying every day
-orderOneTime = "01:15"
-orderTwoTime = "01:15"
 
 
-#spot wallet balance
+# call on the google spreadsheet, specific sheets and appending report into the sheet
+def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4, p_5, p_6):
+    spreadsheet_credentials = gspread.service_account(filename='sheet_credentials.json')
+    spreadsheet_id = spreadsheet_credentials.open_by_key('1e-I7RvxlIU3SvvW4i5OD3GCVPqj5Ka5anDbyUOc93oY')
+    sheet = spreadsheet_id.get_worksheet(sheetNum)
+    sheetReports =[
+        [p_1[:19], p_2, str(p_3)+"$"], # spot wallet (testing phase)
+        [p_1[:19], p_2, str(p_3)+"%", p_4], # dip alert
+        [p_1[:19], float(p_2), p_3, p_4, p_5, p_6[:3]] # buying order one
+    ]
+    sheet.append_row(sheetReports[reportNum])
+
+
+# sending message report to the telegram bot
+def sendTelReport(reportNo, p_1, p_2, p_3, p_4, p_5, p_6):
+    telReports = [
+        "***SPOT WALLET BALANCE***\n\nDate: "+p_1[:19]+"\n"+p_2[4:]+" = "+str(p_3)+"$\n"+p_2[:3]+" = "+str(p_4)+p_2[:1]+"\n"+p_5[:3]+" = "+str(p_6)+p_5[:1],
+        "***DIP ALERT!***\n\nDate: "+p_1[:19]+"\n"+p_2+">>  "+str(p_3)+"%"+" at price "+ str(p_4)+"$",
+        "***BUYING ORDER FULFILLED***\n\n"+"Date: "+p_1[:19]+"\nFilled at: "+str(p_2)+"\n"+" $\n"+"Coin quantity: "+str(p_3)+" "+ p_4[:1]+"\n"+"Invested: "+str(p_5)+ " $",
+    ]
+    telegram_send.send(messages=[telReports[reportNo]])
+
+
+# spot wallet balance
 def walletBalance():
-    now = str(datetime.now())
     balance = exchange.fetch_total_balance()
-    balancePrint = "***SPOT WALLET BALANCE***\n\n" + "Date: " + now[:16] + "\n" +  "BUSD = " + str(int(balance['BUSD'])) + "$" + "\n" + orderOnePair[:3] + " = " + str(int(balance[orderOnePair[:3]])) + " " + orderOnePair[:1]  + "\n" + orderTwoPair[:3] + " = " + str(int(balance[orderTwoPair[:3]])) + " " + orderTwoPair[0:1]
-    #telegram notification
-    telegram_send.send(messages=[balancePrint])
-    print('Spot wallet report ... SENT', now[:16])
+    # sending report to telegram and spreadsheet
+    sendSheetReport(3, 0, now, orderOnePair[4:], int(balance[orderOnePair[4:]]), "0", "0", "0") #ONLY FOR TESTING PURPOSES
+    sendTelReport(0, now, orderOnePair, int(balance[orderOnePair[4:]]), int(balance[orderOnePair[:3]]), orderTwoPair, int(balance[orderTwoPair[:3]]))
+    print("SPOT WALLET BALANCE ... SENT", now[:19])
 
-#prices of the pairs telegram notification
-def lastPrices():
-    now = str(datetime.now())
-    pairOnePrice = exchange.fetch_ticker(orderOnePair)
-    pairTwoPrice = exchange.fetch_ticker(orderTwoPair)
-    priceReport = "***CURRENT PRICES***\n\n" + "Date: " + now[:16] + "\n" + orderOnePair[:3] + " >> " + str(round(pairOnePrice['last'], 2))+"$" + "\n" + orderTwoPair[:3] + " >> " + str(round(pairTwoPrice['last'], 2))+"$"
-    telegram_send.send(messages=[priceReport])
-    print('Last prices report ... SENT', now[:16])
 
-#for this method please check google spreadsheet which I shared with you, sheet"Every day 10$ + 60$ on -10% dips"
-def percentageReport():
-    now = str(datetime.now())
-    firstPair = exchange.fetch_ticker(orderOnePair)
-    firstPairP = round(float(firstPair['info']['priceChangePercent']), 2)
-    secondPair = exchange.fetch_ticker(orderTwoPair)
-    secondPairP = round(float(secondPair['info']['priceChangePercent']), 2)
-    #alert message
-    alert = "***DIP ALERT!***\n\n" + "Date: " + now[:16] + "\n" + orderOnePair[0:3] + " >> " + str(firstPairP) + " %\n" + orderTwoPair[0:3] + " >> " + str(secondPairP) + " %\n\nDo you want to invest more?"
+# dip alert
+def dipAlert():
+    pairOneInfo = exchange.fetch_ticker(orderOnePair)
+    pairTwoInfo = exchange.fetch_ticker(orderTwoPair)
+    pairOnePrice= round(pairOneInfo['last'], 2)
+    pairTwoPrice= round(pairTwoInfo['last'], 2)
+    pairsPer = {orderOnePair[:3]:[round(float(pairOneInfo['info']['priceChangePercent']), 2), pairOnePrice], orderTwoPair[:3]:[round(float(pairTwoInfo['info']['priceChangePercent']), 2), pairTwoPrice]}
 
-    #if there is dip more than -10% it notifies you to invest extra money manually
-    if firstPairP < -9.99 or secondPairP < -9.99:
-        #send reports to telegram and to sheet
-        telegram_send.send(messages=[alert])
-        sheetReport1 = now[:16], orderOnePair[0:3], str(firstPairP)+"%"
-        report_sheet.append_row(sheetReport1)
-        sheetReport2 = now[:16], orderTwoPair[0:3], str(secondPairP)+"%"
-        report_sheet.append_row(sheetReport2)
-        print('Percentage report ... SENT', now[:16])
-    else:
-        print("No extreme percentage ... STATUS OK", now[:16])
+    for key, value in pairsPer.items():
+        if value[0] < -10:
+            # sending report to telegram and spreadsheet
+            sendSheetReport(2, 1, now, key, value[0], value[1], "0", "0")
+            sendTelReport(1, now, key, value[0],value[1], "0", "0")
+            print(key+" DIP ALERT ... SENT", now[:19])
+        else:
+            print(key + ", NO EXTREME DIPS. SCRIPT ... RUNNING", now[:19])
 
-#first pair trade
-def order_1():
+
+def buyingOrder1():
+    # order parameters
     symbol = orderOnePair
     type = 'market'  # or 'limt'
     side = 'buy'  # or 'sell'
     amount = 1 # ignore this one
     price = orderOneInvestment
-    try:
-        now = str(datetime.now())
-        data = exchange.create_order(symbol, type, side, amount, price)
-        filledAt = float(data['info']['fills'][0]['price'])
-        commissionRate = float(data['info']['fills'][0]['commission'])
-        #send reports to telegram and to sheet
-        telReport = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $ \n" + "Amount: " + str(data.get('amount')) + " " + orderOnePair[:3] + "\n" + "Invested: " + str(round(data.get('cost'), 2)) + " $"
-        telegram_send.send(messages=[telReport])
-        sheetReport = now[:10], now[11:16], float(filledAt), round(data.get('cost'), 2), float(commissionRate), data.get('amount')
-        order_1_sheet.append_row(sheetReport)
-        print('ORDER 1 FULFILLED ... DONE', now[:16])
-    except:
-        telegram_send.send(messages=["Binance API connection issue!\n" + orderOnePair +  " buying order has failed!"])
-#second pair trade
-def order_2():
-    symbol = orderTwoPair  
-    type = 'market'  # or 'limit'
-    side = 'buy'  # or 'sell'
-    amount = 1 # ignore this one
-    price = orderTwoInvestment
-    try:
-        now = str(datetime.now())
-        data = exchange.create_order(symbol, type, side, amount, price)
-        filledAt = float(data['info']['fills'][0]['price'])
-        commissionRate = float(data['info']['fills'][0]['commission'])
-        #send reports to telegram and to sheet   
-        telReport = "***BUYING ORDER FULFILLED***\n\n" + "Date: " + now[:16] + "\n" + "Filled at: " + str(filledAt) + " $\n" + "Amount: " + str(data.get('amount')) + " " + orderTwoPair[:3] + "\n" + "Invested: " + str(round(data.get('cost'), 2)) + " $"
-        telegram_send.send(messages=[telReport])
-        sheetReport = now[:10], now[11:16], float(filledAt), round(data.get('cost'), 2), float(commissionRate), data.get('amount')
-        order_2_sheet.append_row(sheetReport)
-        print('ORDER 2 FULFILLED ... DONE', now[:16])
-    except:
-        telegram_send.send(messages=["Binance API connection issue!\n" + orderTwoPair +  " buying order has failed!"])
+    # request order
+    dataBinance = exchange.create_order(symbol, type, side, amount, price)
+    filledAt = dataBinance['info']['fills'][0]['price'] # bug 2 float not allowed?
+    commissionRate = dataBinance['info']['fills'][0]['commission']
+    invested = dataBinance['cost'] # bug 3 float not allowed?
+    assetQty = dataBinance['amount']
+
+    # sending report to telegram and spreadsheet
+    sendSheetReport(0, 2, now, filledAt, invested, commissionRate, assetQty, symbol)
+    sendTelReport(2, now, filledAt, assetQty, symbol, invested, "0")
 
 
-# multiprocessing 1|spot wallet 2| last price ada/sol 3| dip alert 4| first pair trade 5| second pair trade
-first_process = multiprocessing.Process(name='first_process', target=walletBalance)
-second_process = multiprocessing.Process(name='second_process', target=lastPrices)
-third_process = multiprocessing.Process(name='third_process', target=percentageReport)
-fourth_process = multiprocessing.Process(name='fourth_process', target=order_1)
-fifth_process = multiprocessing.Process(name='fifth_process', target=order_2)
 
-#running processes/functions in different times
-#https://schedule.readthedocs.io/en/stable/examples.html
-
-# # 1| Spot wallet report
-# schedule.every(12).hours.do(first_process.run)
-# # 2| last pairs prices
-# schedule.every(3).hours.do(second_process.run)
-# # 3| dip alert
-# schedule.every(4).hours.do(third_process.run)
-# # 4| first pair trade
-# schedule.every().day.at(orderOneTime).do(fourth_process.run)
-# # 5| second pair trade
-# schedule.every().day.at(orderTwoTime).do(fifth_process.run)
-
-# #only for testing purposes
-#spot wallet report
-schedule.every(10).seconds.do(first_process.run)
-#last price report
-schedule.every(10).seconds.do(second_process.run)
-#dip alert
-schedule.every(10).seconds.do(third_process.run)
-# # first pair trade
-# schedule.every(10).seconds.do(fourth_process.run)
-# # second pair trade
-# schedule.every(10).seconds.do(fifth_process.run)
-
-schedule.run_pending()
-
-while 1:
-    schedule.run_pending()
-    time.sleep(1)
+# test zone
+# walletBalance()
+# dipAlert()
+buyingOrder1()
+time.sleep(5)
