@@ -116,16 +116,16 @@ if __name__ == '__main__':
     #running processes/functions in different times
     #https://schedule.readthedocs.io/en/stable/examples.html
 
-    # 1| Spot wallet report
-    schedule.every(12).hours.do(first_process.run)
-    # 2| last pairs prices
-    schedule.every(3).hours.do(second_process.run)
-    # 3| dip alert
-    schedule.every(4).hours.do(third_process.run)
-    # 4| first pair trade
-    schedule.every().day.at(orderOne).do(fourth_process.run)
-    # 5| second pair trade
-    schedule.every().day.at(orderTwo).do(fifth_process.run)
+    # # 1| Spot wallet report
+    # schedule.every(12).hours.do(first_process.run)
+    # # 2| last pairs prices
+    # schedule.every(3).hours.do(second_process.run)
+    # # 3| dip alert
+    # schedule.every(4).hours.do(third_process.run)
+    # # 4| first pair trade
+    # schedule.every().day.at(orderOne).do(fourth_process.run)
+    # # 5| second pair trade
+    # schedule.every().day.at(orderTwo).do(fifth_process.run)
 
     # #only for testing purposes
     # #spot wallet report
