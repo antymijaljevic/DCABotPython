@@ -20,13 +20,13 @@ report_sheet = spreadsheet_id.get_worksheet(2)
 
 #trading set up
 orderOnePair = 'ADA/BUSD'
-orderTwoPair = 'SOL/BUSD'
+orderTwoPair = 'ETH/BUSD'
 #investment
 orderOneInvestment = 10
 orderTwoInvestment = 10
 #time of buying every day
-orderOne = "01:15"
-orderTwo = "01:15"
+orderOneTime = "01:15"
+orderTwoTime = "01:15"
 
 
 #spot wallet balance
@@ -106,7 +106,7 @@ def order_2():
         telegram_send.send(messages=[telReport])
         sheetReport = now[:10], now[11:16], float(filledAt), round(data.get('cost'), 2), float(commissionRate), data.get('amount')
         order_2_sheet.append_row(sheetReport)
-        print('ORDER 1 FULFILLED ... DONE', now[:16])
+        print('ORDER 2 FULFILLED ... DONE', now[:16])
     except:
         telegram_send.send(messages=["Binance API connection issue!\n" + orderTwoPair +  " buying order has failed!"])
 
@@ -128,21 +128,21 @@ fifth_process = multiprocessing.Process(name='fifth_process', target=order_2)
 # # 3| dip alert
 # schedule.every(4).hours.do(third_process.run)
 # # 4| first pair trade
-# schedule.every().day.at(orderOne).do(fourth_process.run)
+# schedule.every().day.at(orderOneTime).do(fourth_process.run)
 # # 5| second pair trade
-# schedule.every().day.at(orderTwo).do(fifth_process.run)
+# schedule.every().day.at(orderTwoTime).do(fifth_process.run)
 
 # #only for testing purposes
 #spot wallet report
-schedule.every(10).minutes.do(first_process.run)
+schedule.every(10).seconds.do(first_process.run)
 #last price report
-schedule.every(10).minutes.do(second_process.run)
+schedule.every(10).seconds.do(second_process.run)
 #dip alert
-schedule.every(10).minutes.do(third_process.run)
-# first pair trade
-schedule.every(30).minutes.do(fourth_process.run)
-# second pair trade
-schedule.every(30).minutes.do(fifth_process.run)
+schedule.every(10).seconds.do(third_process.run)
+# # first pair trade
+# schedule.every(10).seconds.do(fourth_process.run)
+# # second pair trade
+# schedule.every(10).seconds.do(fifth_process.run)
 
 schedule.run_pending()
 
