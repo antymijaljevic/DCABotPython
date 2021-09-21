@@ -30,7 +30,7 @@ orderTwoInvestment = 10
 
 
 # call on the google spreadsheet, specific sheets and appending report into the sheet
-def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4, p_5, p_6):
+def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4=None, p_5=None, p_6=None):
     spreadsheet_credentials = gspread.service_account(filename='sheet_credentials.json')
     spreadsheet_id = spreadsheet_credentials.open_by_key('1e-I7RvxlIU3SvvW4i5OD3GCVPqj5Ka5anDbyUOc93oY')
     sheet = spreadsheet_id.get_worksheet(sheetNum)
@@ -43,11 +43,11 @@ def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4, p_5, p_6):
 
 
 # sending message report to the telegram bot
-def sendTelReport(reportNo, p_1, p_2, p_3, p_4, p_5, p_6, p_7):
+def sendTelReport(reportNo, p_1, p_2, p_3, p_4, p_5=None, p_6=None, p_7=None):
     telReports = [
-        # "***SPOT WALLET BALANCE***\n\nDate: "+p_1[:19]+"\n"+p_2+" = "+str(p_3)+"$\n"+p_4+" = "+str(p_5)+" "+p_4[:1]+"\n"+p_6+" = "+str(p_7)+" "+p_6[:1],
-        #"***DIP ALERT!***\n\nDate: "+p_1[:19]+"\n"+str(p_2)+">>  "+str(p_3)+"%"+" at price "+ str(p_4)+"$",
-        "***BUYING ORDER FULFILLED***\n\n"+"Date: "+p_1[:19]+"\nAt market price: "+str(p_2)+" $\n"+"Coin quantity: "+str(p_3)+" "+ p_4+"\n"+"Invested: "+str(p_5)+ " $",
+        #"***SPOT WALLET BALANCE***\n\nDate: "+p_1[:19]+"\n"+p_2+" = "+str(p_3)+"$\n"+p_4+" = "+str(p_5)+" "+p_4[:1]+"\n"+p_6+" = "+str(p_7)+" "+p_6[:1],
+        #***DIP ALERT!***\n\nDate: "+p_1[:19]+"\n"+str(p_2)+">>  "+str(p_3)+"%"+" at price "+ str(p_4)+"$",
+        "***"+p_4+" BUYING ORDER FULFILLED***\n\n"+"Date: "+p_1[:19]+"\nAt market price: "+str(p_2)+" $\n"+"Coin quantity: "+str(p_3)+" "+ p_4+"\n"+"Invested: "+str(p_5)+ " $",
     ]
     telegram_send.send(messages=[telReports[reportNo]])
 
@@ -63,7 +63,7 @@ def walletBalance():
     pairTwoBalance = float(balance[pairTwoTicker]) #float
 
     # sending report to telegram and spreadsheet
-    sendSheetReport(3, 0, now, busdTicker, usdBalance, "0", "0", "0")
+    sendSheetReport(3, 0, now, busdTicker, usdBalance)
     sendTelReport(0, now, busdTicker, usdBalance, pairOneTicker, pairOneBalance, pairTwoTicker, pairTwoBalance)
     print("SPOT WALLET BALANCE ... SENT", now[:19])
 
@@ -77,19 +77,19 @@ def dipAlert():
     pairsPer = {orderOnePair[:3]:[round(float(pairOneInfo['info']['priceChangePercent']), 2), pairOnePrice], orderTwoPair[:3]:[round(float(pairTwoInfo['info']['priceChangePercent']), 2), pairTwoPrice]}
 
     for key, value in pairsPer.items():
-        if value[0] < -10:
+        if value[0] < 5:
             ticker = key
             percentage = value[0]
             price = value[1]
             # sending report to telegram and spreadsheet
-            sendSheetReport(2, 1, now, ticker, percentage, price, "0", "0")
-            sendTelReport(1, now, ticker, percentage, price, "0", "0", "0")
+            sendSheetReport(2, 1, now, ticker, percentage, price)
+            sendTelReport(0, now, ticker, percentage, price)
             print(key+" DIP ALERT ... SENT", now[:19])
         else:
             print(key + ", NO EXTREME DIPS. SCRIPT ... RUNNING", now[:19])
 
 
-def buyingOrder1():
+def order_1():
     # order parameters
     symbol = orderOnePair
     type = 'market'  # or 'limt'
@@ -107,13 +107,12 @@ def buyingOrder1():
    
     # sending report to telegram and spreadsheet
     sendSheetReport(0, 2, now, marketPrice, invested, commission, assetQty, ticker)
-    sendTelReport(0, now, marketPrice, assetQty, ticker, invested, "0", "0")
-
-
+    sendTelReport(0, now, marketPrice, assetQty, ticker, invested)
+    print(ticker + " ORDER FULFILLED ... DONE", now[:19])
 
 
 # test zone
 # walletBalance()
 # dipAlert()
-buyingOrder1()
+order_1()
 time.sleep(10)
