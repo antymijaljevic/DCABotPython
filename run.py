@@ -45,8 +45,8 @@ def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4, p_5, p_6):
 # sending message report to the telegram bot
 def sendTelReport(reportNo, p_1, p_2, p_3, p_4, p_5, p_6, p_7):
     telReports = [
-        "***SPOT WALLET BALANCE***\n\nDate: "+p_1[:19]+"\n"+p_2+" = "+str(p_3)+"$\n"+p_4+" = "+str(p_5)+" "+p_4[:1]+"\n"+p_6+" = "+str(p_7)+" "+p_6[:1],
-        "***DIP ALERT!***\n\nDate: "+p_1[:19]+"\n"+p_2+">>  "+str(p_3)+"%"+" at price "+ str(p_4)+"$",
+        # "***SPOT WALLET BALANCE***\n\nDate: "+p_1[:19]+"\n"+p_2+" = "+str(p_3)+"$\n"+p_4+" = "+str(p_5)+" "+p_4[:1]+"\n"+p_6+" = "+str(p_7)+" "+p_6[:1],
+        #"***DIP ALERT!***\n\nDate: "+p_1[:19]+"\n"+str(p_2)+">>  "+str(p_3)+"%"+" at price "+ str(p_4)+"$",
         "***BUYING ORDER FULFILLED***\n\n"+"Date: "+p_1[:19]+"\nAt market price: "+str(p_2)+" $\n"+"Coin quantity: "+str(p_3)+" "+ p_4+"\n"+"Invested: "+str(p_5)+ " $",
     ]
     telegram_send.send(messages=[telReports[reportNo]])
@@ -78,9 +78,12 @@ def dipAlert():
 
     for key, value in pairsPer.items():
         if value[0] < -10:
+            ticker = key
+            percentage = value[0]
+            price = value[1]
             # sending report to telegram and spreadsheet
-            sendSheetReport(2, 1, now, key, value[0], value[1], "0", "0")
-            sendTelReport(1, now, key, value[0],value[1], "0", "0")
+            sendSheetReport(2, 1, now, ticker, percentage, price, "0", "0")
+            sendTelReport(1, now, ticker, percentage, price, "0", "0", "0")
             print(key+" DIP ALERT ... SENT", now[:19])
         else:
             print(key + ", NO EXTREME DIPS. SCRIPT ... RUNNING", now[:19])
@@ -104,13 +107,13 @@ def buyingOrder1():
    
     # sending report to telegram and spreadsheet
     sendSheetReport(0, 2, now, marketPrice, invested, commission, assetQty, ticker)
-    sendTelReport(2, now, marketPrice, assetQty, ticker, invested, "0")
+    sendTelReport(0, now, marketPrice, assetQty, ticker, invested, "0", "0")
 
 
 
 
 # test zone
-walletBalance()
+# walletBalance()
 # dipAlert()
-# buyingOrder1()
+buyingOrder1()
 time.sleep(10)
