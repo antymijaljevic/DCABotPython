@@ -17,8 +17,6 @@ exchange.set_sandbox_mode(False)
 # orderPair_1 = 'BTC/BUSD'
 # orderPair_2 = 'ETH/BUSD'
 
-# timestamp
-now = str(datetime.now())
 
 # to be set up manually depends about user needs
 # trading variables for order function
@@ -43,6 +41,7 @@ def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4=None, p_5=None, p_6=
 
 # spot wallet balance
 def walletBalance():
+    now = str(datetime.now())
     balance = exchange.fetch_total_balance()
     busdTicker = orderPair_1[4:] #str
     usdBalance = int(balance[busdTicker]) #float
@@ -60,6 +59,7 @@ def walletBalance():
 
 # dip alert
 def dipAlert():
+    now = str(datetime.now())
     pairOneInfo = exchange.fetch_ticker(orderPair_1)
     pairTwoInfo = exchange.fetch_ticker(orderPair_2)
     pairOnePrice= round(pairOneInfo['last'], 2)
@@ -67,7 +67,7 @@ def dipAlert():
     pairsPer = {orderPair_1[:3]:[round(float(pairOneInfo['info']['priceChangePercent']), 2), pairOnePrice], orderPair_2[:3]:[round(float(pairTwoInfo['info']['priceChangePercent']), 2), pairTwoPrice]}
 
     for key, value in pairsPer.items():
-        if value[0] < 5:
+        if value[0] < -10:
             ticker = key
             percentage = value[0]
             price = value[1]
@@ -81,6 +81,7 @@ def dipAlert():
 
 
 def order(thePair=None, theInvestment=None):
+    now = str(datetime.now())
     #sheet change
     if thePair != 'ADA/BUSD':
         sheet = 1
