@@ -94,33 +94,7 @@ def order(thePair=None, theInvestment=None):
     amount = 1 # ignore this one
     price = theInvestment
     # request order
-    # dataBinance = exchange.create_order(symbol, type, side, amount, price)
-
-    dataBinance = {
-    'info': {'symbol': 'ADABUSD', 'orderId': '574926833', 'orderListId': '-1', 'clientOrderId': 'x-R4BD3S821058420866ddf407f78d90', 'transactTime': '1632210699815', 'price': '0.00000000', 'origQty': '4.70000000', 'executedQty': '4.70000000', 'cummulativeQuoteQty': '9.99220000', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'MARKET', 'side': 'BUY', 'fills': [{'price': '2.12600000', 'qty': '4.70000000', 'commission': '0.00470000', 'commissionAsset': 'ADA', 'tradeId': '52730974'}]}, 
-    'id': '574926833', 
-    'clientOrderId': 
-    'x-R4BD3S821058420866ddf407f78d90', 
-    'timestamp': 1632210699815, 'datetime': 
-    '2021-09-21T07:51:39.815Z', 
-    'lastTradeTimestamp': None, 
-    'symbol': 'ADA/BUSD', 
-    'type': 'market', 
-    'timeInForce': 'GTC', 
-    'postOnly': False, 
-    'side': 'buy', 
-    'price': 2.126, 
-    'stopPrice': None, 
-    'amount': 4.7, 
-    'cost': 9.9922, 
-    'average': 2.126, 
-    'filled': 4.7, 
-    'remaining': 0.0, 
-    'status': 'closed', 
-    'fee': {'cost': 0.0047, 'currency': 'ADA'}, 
-    'trades': [{'info': {'price': '2.12600000', 'qty': '4.70000000', 'commission': '0.00470000', 'commissionAsset': 'ADA', 'tradeId': '52730974'}, 'timestamp': None, 'datetime': None, 'symbol': 'ADA/BUSD', 'id': None, 'order': None, 'type': None, 'side': None, 'takerOrMaker': None, 'price': 2.126, 'amount': 4.7, 'cost': 9.9922, 'fee': {'cost': 0.0047, 'currency': 'ADA'}}], 'fees': [{'cost': 0.0047, 'currency': 'ADA'}]
-    }
-
+    dataBinance = exchange.create_order(symbol, type, side, amount, price)
     marketPrice = round(dataBinance['trades'][0]['price'], 2) 
     invested = round(float(dataBinance['cost']), 2)
     commission = float(dataBinance['trades'][0]['info']['commission'])
@@ -133,21 +107,22 @@ def order(thePair=None, theInvestment=None):
     telegram_send.send(messages=[telMsg])
     print(ticker + " ORDER FULFILLED ... DONE", now[:19])
 
-#schedule specific time for each function
-# wallet balance
-# schedule.every(24).hours.do(walletBalance)
-# # dip alert
-# schedule.every(12).hours.do(dipAlert)
-# # order 1
-# schedule.every().day.at(orderTime).do(order(order, orderPair_1, orderInvestment)
-# # order 2
-# schedule.every().day.at(orderTime).do(order(order, orderPair_1, orderInvestment)
 
-#test
-schedule.every(3).seconds.do(walletBalance)
-schedule.every(4).seconds.do(dipAlert)
-schedule.every(9).seconds.do(order, orderPair_1, orderInvestment)
-schedule.every(9).seconds.do(order, orderPair_2, orderInvestment)
+#schedule specific time for each function
+#wallet balance
+schedule.every(24).hours.do(walletBalance)
+# dip alert
+schedule.every(12).hours.do(dipAlert)
+# order 1
+schedule.every().day.at(orderTime).do(order, orderPair_1, orderInvestment)
+# order 2
+schedule.every().day.at(orderTime).do(order, orderPair_2, orderInvestment)
+
+# # schedule specific time for each function
+# schedule.every(9).seconds.do(walletBalance)
+# schedule.every(9).seconds.do(dipAlert)
+# schedule.every(9).seconds.do(order, orderPair_1, orderInvestment)
+# schedule.every(9).seconds.do(order, orderPair_2, orderInvestment)
 
 while True:
     schedule.run_pending()
