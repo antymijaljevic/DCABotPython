@@ -18,19 +18,19 @@ exchange = ccxt.binance({
 
 
 # variables to be set up manually by a user needs
-Conversion_1 = 'BTC/BUSD' # put here you conversion pair 1
-Conversion_2 = 'SOL/BUSD' # put here you conversion pair 2
+Conversion_1 = 'ADA/BUSD' # put here you conversion pair 1
+Conversion_2 = 'ETH/BUSD' # put here you conversion pair 2
 matchCon_1 = re.search(r'([A-Z]*)/([A-Z]*)', Conversion_1)
 matchCon_2 = re.search(r'([A-Z]*)/([A-Z]*)', Conversion_2)
 Conversion_1FirstTicker = matchCon_1.group(1)
 Conversion_1SecondTicker = matchCon_1.group(2)
 Conversion_2FirstTicker = matchCon_2.group(1)
 Conversion_2SecondTicker = matchCon_2.group(2)
-orderTime = '01:00' # at what time you want to execute buying order?
-orderInvestment = 10 # how much you want to invest?
-dipInvestment = 20 # how much you want to invest during a dip?
-dipPercentage = 12 # here you set the depth of a dip
-checkForDip = 8 # dip check frequency (in hours)
+buyingOrderTime = '01:00' # at what time you want to execute buying order?
+orderInvestment = 11 # how much you want to invest?
+dipInvestment = 50 # how much you want to invest during a dip?
+dipPercentage = -10 # here you set the depth of a dip
+checkForDip = 12 # dip check frequency (in hours)
 walletBalanceCheck = "12:00" # at what time you want to get wallet balance report?
 
 
@@ -126,16 +126,15 @@ def order(symbol, theInvestment):
     print(ticker + " ORDER FULFILLED ... DONE", now[:19])
 
 
-# #schedule specific time for each function
-# #wallet balance
-# schedule.every().day.at(walletBalanceCheck).do(walletBalance)
-# # dip alert
-# schedule.every(checkForDip).hours.do(dipAlert)
-# # order 1
-# schedule.every().day.at(orderTime).do(order, Conversion_1, orderInvestment)
-# # order 2
-# schedule.every().day.at(orderTime).do(order, Conversion_2, orderInvestment)
-schedule.every(5).seconds.do(walletBalance)
+#schedule specific time for each function
+#wallet balance
+schedule.every().day.at(walletBalanceCheck).do(walletBalance)
+# dip alert
+schedule.every(checkForDip).hours.do(dipAlert)
+# order 1
+schedule.every().day.at(buyingOrderTime).do(order, Conversion_1, orderInvestment)
+# order 2
+schedule.every().day.at(buyingOrderTime).do(order, Conversion_2, orderInvestment)
 
 while True:
     schedule.run_pending()
