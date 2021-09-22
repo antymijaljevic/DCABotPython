@@ -132,11 +132,11 @@ schedule.every(12).hours.do(dipAlert)
 # order 1
 schedule.every().day.at(orderTime).do(order, orderPair_1, orderInvestment)
 # order 2
-schedule.every().day.at(orderTime).do(order, orderPair_2, orderInvestment)
+# schedule.every().day.at(orderTime).do(order, orderPair_2, orderInvestment)
 
 # # schedule specific time for each function
-# schedule.every(10).minutes.do(walletBalance)
-#schedule.every(10).seconds.do(dipAlert)
+# schedule.every(5).seconds.do(walletBalance)
+# schedule.every(5).seconds.do(dipAlert)
 # schedule.every(10).seconds.do(order, orderPair_1, orderInvestment)
 # schedule.every(10).seconds.do(order, orderPair_2, orderInvestment)
 
