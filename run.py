@@ -67,7 +67,7 @@ def dipAlert():
     pairsPer = {orderPair_1[:3]:[round(float(pairOneInfo['info']['priceChangePercent']), 2), pairOnePrice], orderPair_2[:3]:[round(float(pairTwoInfo['info']['priceChangePercent']), 2), pairTwoPrice]}
 
     for key, value in pairsPer.items():
-        if value[0] < 3:
+        if value[0] < -10:
             ticker = key
             percentage = value[0]
             price = value[1]
