@@ -3,13 +3,13 @@
 # necessary libraries and API key variables
 import ccxt, telegram_send, schedule, time, gspread, re
 from datetime import datetime
-from keys import API_KEY, SECRET
+import config
 
 
 # call on binance using ccxt library
 exchange = ccxt.binance({
-    'apiKey': API_KEY,
-    'secret': SECRET,
+    'apiKey': config.BINANCE_API_KEY,
+    'secret': config.BINANCE_SECRET_KEY,
     'enableRateLimit': True,
 })
 
@@ -76,6 +76,7 @@ def walletBalance():
         Conversion_2SecondTicker: int(balance[Conversion_2SecondTicker])
     }
 
+    # collect all the reports
     telMsgAll = "***SPOT WALLET BALANCE***\n\nDate: "+now[:19]
     for ticker, balance in balances.items():
         # sending reports to the telegram and to the spreadsheet
