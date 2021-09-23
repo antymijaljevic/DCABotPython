@@ -74,6 +74,7 @@ def walletBalance():
 # dip alert
 def dipAlert():
     now = str(datetime.now())
+    global lastDipBought
     # all informations about specific conversion pair
     conversion_1Info = exchange.fetch_ticker(Conversion_1)
     conversion_2Info = exchange.fetch_ticker(Conversion_2)
