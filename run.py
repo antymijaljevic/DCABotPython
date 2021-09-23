@@ -34,9 +34,6 @@ buyingOrderTime = '01:00' # at what time you want to execute buying order?
 orderInvestment_1 = 11 # how much you want to invest in order 1?
 # orderInvestment_2 = 11 # how much you want to invest in order 2? (only if needed)
 
-# prevent from buying dip multiple times on same day
-lastDipBought = ""
-
 # call on the google spreadsheet API, specific sheets and appending report into the sheet
 def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4=None, p_5=None, p_6=None, p_7=None):
     spreadsheet_credentials = gspread.service_account(filename='sheet_credentials.json')
@@ -74,7 +71,8 @@ def walletBalance():
 # dip alert
 def dipAlert():
     now = str(datetime.now())
-    global lastDipBought
+    # prevents from buying dip multiple times on same day
+    lastDipBought = ""
     # all informations about specific conversion pair
     conversion_1Info = exchange.fetch_ticker(Conversion_1)
     conversion_2Info = exchange.fetch_ticker(Conversion_2)
