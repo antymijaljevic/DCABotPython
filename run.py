@@ -34,7 +34,8 @@ buyingOrderTime = '01:00' # at what time you want to execute buying order?
 orderInvestment_1 = 11 # how much you want to invest in order 1?
 # orderInvestment_2 = 11 # how much you want to invest in order 2? (only if needed)
 
-
+# prevent from buying dip multiple times on same day
+lastDipBought = ""
 
 # call on the google spreadsheet API, specific sheets and appending report into the sheet
 def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4=None, p_5=None, p_6=None, p_7=None):
@@ -92,9 +93,12 @@ def dipAlert():
             sendSheetReport(2, 1, now, ticker, percentage[0], percentage[1])
             telMsg = "***DIP ALERT!***\n\nDate: "+now[:19]+"\n"+ticker+" >>  "+str(percentage[0])+"%"+" at price "+ str(percentage[1])+" ("+pricePerIn+")"
             telegram_send.send(messages=[telMsg])
-            print(ticker+" DIP ALERT ... BUYING REQUEST HAS BEEN SENT", now[:19])
-            order(ticker+"/"+pricePerIn, dipInvestment)
-            print(ticker + " DIP BUYING ORDER HAS BEEN EXECUTED", now[:19])
+            print(ticker+" DIP ALERT ... SENT", now[:19])
+
+            #buy only ones for that day
+            if lastDipBought != now[:10]:
+                order(ticker+"/"+pricePerIn, dipInvestment)
+                print(ticker + " DIP BUYING ORDER HAS BEEN EXECUTED", now[:19])
         else:
             print(ticker + ", NO DIP, STATUS... OK", now[:19])
 
