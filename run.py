@@ -76,12 +76,14 @@ def walletBalance():
         Conversion_2SecondTicker: int(balance[Conversion_2SecondTicker])
     }
 
+    telMsgAll = "***SPOT WALLET BALANCE***\n\nDate: "+now[:19]
     for ticker, balance in balances.items():
         # sending reports to the telegram and to the spreadsheet
         sendSheetReport(3, 0, now, ticker, balance)
-        telMsg = "***SPOT WALLET BALANCE***\n\nDate: "+now[:19]+"\n"+ticker+" = "+str(balance)+" "+ticker[:1]
-        telegram_send.send(messages=[telMsg])
-
+        telMsg = "\n"+ticker+" = "+str(balance)+" "+ticker[:1]
+        telMsgAll += telMsg
+        
+    telegram_send.send(messages=[telMsgAll])
     print("SPOT WALLET BALANCE ... SENT", now[:19])
 
 # dip alert
