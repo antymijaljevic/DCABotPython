@@ -26,12 +26,14 @@ Conversion_1FirstTicker = matchCon_1.group(1)
 Conversion_1SecondTicker = matchCon_1.group(2)
 Conversion_2FirstTicker = matchCon_2.group(1)
 Conversion_2SecondTicker = matchCon_2.group(2)
-buyingOrderTime = '01:00' # at what time you want to execute buying order?
-orderInvestment = 11 # how much you want to invest?
-dipInvestment = 50 # how much you want to invest during a dip?
+walletBalanceCheck = "12:00" # at what time you want to get wallet balance report?
 dipPercentage = -10 # here you set the depth of a dip
 checkForDip = 12 # dip check frequency (in hours)
-walletBalanceCheck = "12:00" # at what time you want to get wallet balance report?
+dipInvestment = 51 # how much you want to invest during a dip?
+buyingOrderTime = '01:00' # at what time you want to execute buying order?
+orderInvestment_1 = 11 # how much you want to invest in order 1?
+# orderInvestment_2 = 11 # how much you want to invest in order 2? (only if needed)
+
 
 
 # call on the google spreadsheet API, specific sheets and appending report into the sheet
@@ -132,9 +134,9 @@ schedule.every().day.at(walletBalanceCheck).do(walletBalance)
 # dip alert
 schedule.every(checkForDip).hours.do(dipAlert)
 # order 1
-schedule.every().day.at(buyingOrderTime).do(order, Conversion_1, orderInvestment)
-# order 2
-schedule.every().day.at(buyingOrderTime).do(order, Conversion_2, orderInvestment)
+schedule.every().day.at(buyingOrderTime).do(order, Conversion_1, orderInvestment_1)
+# order 2  # only if needed
+# schedule.every().day.at(buyingOrderTime).do(order, Conversion_2, orderInvestment_2)
 
 while True:
     schedule.run_pending()
