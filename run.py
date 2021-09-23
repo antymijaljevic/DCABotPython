@@ -1,4 +1,5 @@
 # written by antymijaljevic@gmail.com
+# 2021
 
 # necessary libraries and API key variables
 import ccxt, telegram_send, schedule, time, gspread, re
