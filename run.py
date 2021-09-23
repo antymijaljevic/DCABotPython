@@ -68,7 +68,7 @@ def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4=None, p_5=None, p_6=
 def walletBalance():
     now = str(datetime.now())
     # the balance of your spot wallet (will print all tickers that exist on the binanace)
-    binanceAPI(exchange.fetch_total_balance())
+    balance = binanceAPI(exchange.fetch_total_balance())
 
     balances = {
         Conversion_1FirstTicker: float(balance[Conversion_1FirstTicker]),
