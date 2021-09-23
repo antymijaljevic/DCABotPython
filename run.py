@@ -34,6 +34,21 @@ buyingOrderTime = '01:00' # at what time you want to execute buying order?
 orderInvestment_1 = 11 # how much you want to invest in order 1?
 # orderInvestment_2 = 11 # how much you want to invest in order 2? (only if needed)
 
+# trying more times to get response from Binance API
+def binanceAPI(response):
+    now = str(datetime.now())
+    attempts = 0
+
+    while attempts < 3:
+        try:
+            data = response
+            break
+        except:
+            print("ATTEMPT: ",attempts, " ... CAN NOT CONNECT ON BINANCE API", now[:19])
+            attempts += 1
+            time.sleep(1)
+    return data
+
 # call on the google spreadsheet API, specific sheets and appending report into the sheet
 def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4=None, p_5=None, p_6=None, p_7=None):
     spreadsheet_credentials = gspread.service_account(filename='sheet_credentials.json')
@@ -52,7 +67,8 @@ def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4=None, p_5=None, p_6=
 def walletBalance():
     now = str(datetime.now())
     # the balance of your spot wallet (will print all tickers that exist on the binanace)
-    balance = exchange.fetch_total_balance()
+    binanceAPI(exchange.fetch_total_balance())
+
     balances = {
         Conversion_1FirstTicker: float(balance[Conversion_1FirstTicker]),
         Conversion_1SecondTicker: int(balance[Conversion_1SecondTicker]),
@@ -74,8 +90,8 @@ def dipAlert():
     # prevents from buying dip multiple times on same day
     lastDipBought = ""
     # all informations about specific conversion pair
-    conversion_1Info = exchange.fetch_ticker(Conversion_1)
-    conversion_2Info = exchange.fetch_ticker(Conversion_2)
+    conversion_1Info = binanceAPI(exchange.fetch_ticker(Conversion_1))
+    conversion_2Info = binanceAPI(exchange.fetch_ticker(Conversion_2))
     conversion_1InfoPrice= conversion_1Info['last']
     conversion_2InfoPrice= conversion_2Info['last']
     pairsPer = {Conversion_1FirstTicker:[round(float(conversion_1Info['info']['priceChangePercent']), 2), conversion_1InfoPrice], Conversion_2FirstTicker:[round(float(conversion_2Info['info']['priceChangePercent']), 2), conversion_2InfoPrice]}
@@ -116,14 +132,14 @@ def order(symbol, theInvestment):
     amount = 1 # ignore this one
     price = theInvestment
     # request order and get info about conversion
-    currentTickerInfo = exchange.fetch_ticker(symbol)
-    dataBinance = exchange.create_order(symbol, type, side, amount, price)
+    currentTickerInfo = binanceAPI(exchange.fetch_ticker(symbol))
+    orderDataBinance = binanceAPI(exchange.create_order(symbol, type, side, amount, price))
     tickerPercentage = round(float(currentTickerInfo['info']['priceChangePercent']), 2)
-    marketPrice = round(dataBinance['trades'][0]['price'], 2) 
-    invested = round(float(dataBinance['cost']), 2)
-    commission = float(dataBinance['trades'][0]['info']['commission'])
-    assetQty = float(dataBinance['trades'][0]['info']['qty'])
-    ticker = dataBinance['trades'][0]['info']['commissionAsset']
+    marketPrice = round(orderDataBinance['trades'][0]['price'], 2) 
+    invested = round(float(orderDataBinance['cost']), 2)
+    commission = float(orderDataBinance['trades'][0]['info']['commission'])
+    assetQty = float(orderDataBinance['trades'][0]['info']['qty'])
+    ticker = orderDataBinance['trades'][0]['info']['commissionAsset']
    
     # sending report to telegram and spreadsheet
     sendSheetReport(sheet, 2, now, marketPrice, invested, commission, assetQty, ticker, tickerPercentage)
