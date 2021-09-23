@@ -97,6 +97,7 @@ def dipAlert():
 
             #buy only ones for that day
             if lastDipBought != now[:10]:
+                lastDipBought = now[:10]
                 order(ticker+"/"+pricePerIn, dipInvestment)
                 print(ticker + " DIP BUYING ORDER HAS BEEN EXECUTED", now[:19])
         else:
