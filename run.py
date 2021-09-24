@@ -93,6 +93,7 @@ def dipAlert():
     now = str(datetime.now())
     # prevents from buying dip multiple times on same day
     lastDipBought = ""
+    tickerBought = ""
     # all informations about specific conversion pair
     conversion_1Info = binanceAPI(exchange.fetch_ticker(Conversion_1))
     conversion_2Info = binanceAPI(exchange.fetch_ticker(Conversion_2))
@@ -115,8 +116,9 @@ def dipAlert():
             print(ticker+" DIP ALERT ... SENT", now[:19])
 
             #buy only ones for that day
-            if lastDipBought != now[:10]:
+            if lastDipBought != now[:10] and ticker != tickerBought:
                 lastDipBought = now[:10]
+                ticker = tickerBought
                 order(ticker+"/"+pricePerIn, dipInvestment)
                 print(ticker + " DIP BUYING ORDER HAS BEEN EXECUTED", now[:19])
         else:
