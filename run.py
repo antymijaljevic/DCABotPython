@@ -91,9 +91,6 @@ def walletBalance():
 # dip alert
 def dipAlert():
     now = str(datetime.now())
-    # prevents from buying dip multiple times on same day
-    lastDipBought = ""
-    tickerBought = ""
     # all informations about specific conversion pair
     conversion_1Info = binanceAPI(exchange.fetch_ticker(Conversion_1))
     conversion_2Info = binanceAPI(exchange.fetch_ticker(Conversion_2))
@@ -115,10 +112,14 @@ def dipAlert():
             telegram_send.send(messages=[telMsg])
             print(ticker+" DIP ALERT ... SENT", now[:19])
 
-            #buy only ones for that day
-            if lastDipBought != now[:10] and ticker != tickerBought:
-                lastDipBought = now[:10]
-                ticker = tickerBought
+            # prevents from buying dip multiple times on the same day
+            stamp =[]
+
+            #buy only once for that day
+            if now[:19]+ticker not in stamp:
+                stamp.append(now[:19]+ticker)
+                if now[5:7] != stamp[0][5:7]:
+                    stamp = []
                 order(ticker+"/"+pricePerIn, dipInvestment)
                 print(ticker + " DIP BUYING ORDER HAS BEEN EXECUTED", now[:19])
         else:
@@ -159,7 +160,7 @@ def order(symbol, theInvestment):
 schedule.every().day.at(walletBalanceCheck).do(walletBalance)
 # dip alert
 #schedule.every(checkForDip).hours.do(dipAlert)
-schedule.every(10).minutes.do(dipAlert)
+schedule.every(1).minutes.do(dipAlert)
 # order 1
 schedule.every().day.at(buyingOrderTime).do(order, Conversion_1, orderInvestment_1)
 # order 2  # only if needed
