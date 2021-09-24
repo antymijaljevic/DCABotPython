@@ -38,17 +38,12 @@ orderInvestment_1 = 11 # how much you want to invest in order 1?
 # trying more times to get response from Binance API
 def binanceAPI(response):
     now = str(datetime.now())
-    attempts = 0
-
-    while attempts < 3:
-        try:
-            data = response
-            break
-        except:
-            print("ATTEMPT: ",attempts, " ... CAN NOT CONNECT ON BINANCE API", now[:19])
-            attempts += 1
-            time.sleep(1)
-    return data
+    try:
+        response = response
+    except ccxt.NetworkError as e:
+        print(exchange.id, 'Binance API error :', str(e))
+        # retry or whatever
+    return response
 
 # call on the google spreadsheet API, specific sheets and appending report into the sheet
 def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4=None, p_5=None, p_6=None, p_7=None):
@@ -160,7 +155,7 @@ def order(symbol, theInvestment):
 schedule.every().day.at(walletBalanceCheck).do(walletBalance)
 # dip alert
 #schedule.every(checkForDip).hours.do(dipAlert)
-schedule.every(1).minutes.do(dipAlert)
+schedule.every(2).minutes.do(dipAlert)
 # order 1
 schedule.every().day.at(buyingOrderTime).do(order, Conversion_1, orderInvestment_1)
 # order 2  # only if needed
