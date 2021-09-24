@@ -1,5 +1,5 @@
 # written by antymijaljevic@gmail.com
-# 2021
+# September 2021
 
 # necessary libraries and API key variables
 import ccxt, telegram_send, schedule, time, gspread, re
@@ -29,11 +29,12 @@ Conversion_2FirstTicker = matchCon_2.group(1)
 Conversion_2SecondTicker = matchCon_2.group(2)
 walletBalanceCheck = "12:00" # at what time you want to get wallet balance report?
 dipPercentage = -10 # here you set the depth of a dip
-checkForDip = 4 # dip check frequency (in hours)
+checkForDip = 2 # dip check frequency (in hours)
 dipInvestment = 51 # how much you want to invest during a dip?
-buyingOrderTime = '01:00' # at what time you want to execute buying order?
+buyingOrder_1Time = '01:00' # at what time you want to execute first buying order?
+buyingOrder_2Time = '01:00' # at what time you want to execute second buying order?
 orderInvestment_1 = 11 # how much you want to invest in order 1?
-# orderInvestment_2 = 11 # how much you want to invest in order 2? (only if needed)
+orderInvestment_2 = 11 # how much you want to invest in order 2?
 
 # trying more times to get response from Binance API
 def binanceAPI(response):
@@ -156,12 +157,11 @@ def order(symbol, theInvestment):
 #wallet balance
 schedule.every().day.at(walletBalanceCheck).do(walletBalance)
 # dip alert
-#schedule.every(checkForDip).hours.do(dipAlert)
-schedule.every(1).minutes.do(dipAlert)
+schedule.every(checkForDip).hours.do(dipAlert)
 # order 1
-schedule.every().day.at(buyingOrderTime).do(order, Conversion_1, orderInvestment_1)
+schedule.every().day.at(buyingOrder_1Time).do(order, Conversion_1, orderInvestment_1)
 # order 2  # only if needed
-# schedule.every().day.at(buyingOrderTime).do(order, Conversion_2, orderInvestment_2)
+schedule.every().day.at(buyingOrder_2Time).do(order, Conversion_2, orderInvestment_2)
 
 while True:
     schedule.run_pending()
