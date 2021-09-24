@@ -158,7 +158,8 @@ def order(symbol, theInvestment):
 #wallet balance
 schedule.every().day.at(walletBalanceCheck).do(walletBalance)
 # dip alert
-schedule.every(checkForDip).hours.do(dipAlert)
+#schedule.every(checkForDip).hours.do(dipAlert)
+schedule.every(10).minutes.do(dipAlert)
 # order 1
 schedule.every().day.at(buyingOrderTime).do(order, Conversion_1, orderInvestment_1)
 # order 2  # only if needed
