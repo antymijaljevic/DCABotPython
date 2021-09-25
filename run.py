@@ -113,7 +113,7 @@ def dipAlert():
             # prevents from buying dip multiple times on the same day
             stamp =[]
 
-            #buy only once for that day
+            # buy only once for that day
             if now[:19]+ticker not in stamp:
                 stamp.append(now[:19]+ticker)
                 if now[5:7] != stamp[0][5:7]:
@@ -126,7 +126,7 @@ def dipAlert():
 
 def order(symbol, theInvestment):
     now = str(datetime.now())
-    #sheet change
+    # sheet change
     if symbol != Conversion_1:
         sheet = 1
     else:
@@ -153,8 +153,8 @@ def order(symbol, theInvestment):
     print(ticker + " ORDER FULFILLED ... DONE", now[:19])
 
 
-#schedule specific time for each function
-#wallet balance
+# schedule specific time for each function
+# wallet balance
 schedule.every().day.at(walletBalanceCheck).do(walletBalance)
 # dip alert
 schedule.every(checkForDip).hours.do(dipAlert)
