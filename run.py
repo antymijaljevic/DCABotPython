@@ -19,8 +19,8 @@ exchange = ccxt.binance({
 
 
 # variables to be set up manually by a user needs
-Conversion_1 = 'ADA/BUSD' # put here you conversion pair 1
-Conversion_2 = 'SOL/BUSD' # put here you conversion pair 2
+Conversion_1 = 'XRP/BUSD' # put here you conversion pair 1
+Conversion_2 = 'BTC/BUSD' # put here you conversion pair 2
 matchCon_1 = re.search(r'([A-Z]*)/([A-Z]*)', Conversion_1)
 matchCon_2 = re.search(r'([A-Z]*)/([A-Z]*)', Conversion_2)
 Conversion_1FirstTicker = matchCon_1.group(1)
@@ -156,12 +156,16 @@ def order(symbol, theInvestment):
 # schedule specific time for each function
 # wallet balance
 schedule.every().day.at(walletBalanceCheck).do(walletBalance)
+# schedule.every(30).seconds.do(walletBalance)
 # dip alert
 schedule.every(checkForDip).hours.do(dipAlert)
+# schedule.every(30).seconds.do(dipAlert)
 # order 1
 schedule.every().day.at(buyingOrder_1Time).do(order, Conversion_1, orderInvestment_1)
+# schedule.every(60).seconds.do(order, Conversion_1, orderInvestment_1)
 # order 2  # only if needed
 # schedule.every().day.at(buyingOrder_2Time).do(order, Conversion_2, orderInvestment_2)
+# schedule.every(60).seconds.do(order, Conversion_2, orderInvestment_2)
 
 while True:
     schedule.run_pending()
