@@ -32,7 +32,7 @@ Conversion_2FirstTicker = matchCon_2.group(1)
 Conversion_2SecondTicker = matchCon_2.group(2)
 walletBalanceCheck = "12:00" # at what time you want to get wallet balance report?
 dipPercentage = -10 # here you set the depth of a dip
-checkForDip = 1 # dip check frequency (in hours)
+checkForDip = 15 # dip check frequency (in minutes)
 dipInvestment = 51 # how much you want to invest during a dip?
 buyingOrder_1Time = '01:00' # at what time you want to execute first buying order?
 buyingOrder_2Time = '01:00' # at what time you want to execute second buying order?
@@ -166,8 +166,8 @@ def order(symbol, theInvestment):
 schedule.every().day.at(walletBalanceCheck).do(walletBalance)
 #schedule.every(15).seconds.do(walletBalance)
 # dip alert
-schedule.every(checkForDip).hours.do(dipAlert)
-#schedule.every(10).seconds.do(dipAlert)
+#schedule.every(checkForDip).hours.do(dipAlert)
+schedule.every(checkForDip).minutes.do(dipAlert)
 # order 1
 schedule.every().day.at(buyingOrder_1Time).do(order, Conversion_1, orderInvestment_1)
 #schedule.every(10).seconds.do(order, Conversion_1, orderInvestment_1)
