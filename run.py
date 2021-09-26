@@ -17,6 +17,9 @@ exchange = ccxt.binance({
 # set TRUE for the binance testnet and change to the API testnet key
 # exchange.set_sandbox_mode(True)
 
+# prevents from buying dip multiple times on the same day
+stamp = ['2021-09-26SOL']
+
 
 # variables to be set up manually by a user needs
 Conversion_1 = 'ADA/BUSD' # put here you conversion pair 1
@@ -64,7 +67,9 @@ def sendSheetReport(sheetNum, reportNum, p_1, p_2, p_3, p_4=None, p_5=None, p_6=
 
 # spot wallet balance
 def walletBalance():
+    # current timestamp + day of a week
     now = str(datetime.now())
+    day = datetime.today().strftime('%A')
     # the balance of your spot wallet (will print all tickers that exist on the binanace)
     balance = binanceAPI(exchange.fetch_total_balance())
 
@@ -86,8 +91,13 @@ def walletBalance():
     telegram_send.send(messages=[telMsgAll])
     print("SPOT WALLET BALANCE ... SENT", now[:19])
 
+    if day == "Monday":
+        telegram_send.send(messages=["It's "+day+"! It's staking time!"])
+        print("STAKING REMINDER ... SENT", now[:19])
+
 # dip alert
 def dipAlert():
+    global stamp
     now = str(datetime.now())
     # all informations about specific conversion pair
     conversion_1Info = binanceAPI(exchange.fetch_ticker(Conversion_1))
@@ -110,16 +120,14 @@ def dipAlert():
             telegram_send.send(messages=[telMsg])
             print(ticker+" DIP ALERT ... SENT", now[:19])
 
-            # prevents from buying dip multiple times on the same day
-            stamp =[]
-
             # buy only once for that day
-            if now[:19]+ticker not in stamp:
-                stamp.append(now[:19]+ticker)
+            if now[:10]+ticker not in stamp:
+                stamp.append(now[:10]+ticker)
+                print(stamp)
+                order(ticker+"/"+pricePerIn, dipInvestment)
+                print(ticker + " DIP BUYING ORDER HAS BEEN REQUESTED", now[:19])
                 if now[5:7] != stamp[0][5:7]:
                     stamp = []
-                order(ticker+"/"+pricePerIn, dipInvestment)
-                print(ticker + " DIP BUYING ORDER HAS BEEN EXECUTED", now[:19])
         else:
             print(ticker + ", NO DIP, STATUS... OK", now[:19])
 
@@ -155,13 +163,13 @@ def order(symbol, theInvestment):
 
 # schedule specific time for each function
 # wallet balance
-#schedule.every().day.at(walletBalanceCheck).do(walletBalance)
-schedule.every(15).seconds.do(walletBalance)
+schedule.every().day.at(walletBalanceCheck).do(walletBalance)
+#schedule.every(15).seconds.do(walletBalance)
 # dip alert
-# schedule.every(checkForDip).hours.do(dipAlert)
-schedule.every(10).seconds.do(dipAlert)
+schedule.every(checkForDip).hours.do(dipAlert)
+#schedule.every(10).seconds.do(dipAlert)
 # order 1
-#schedule.every().day.at(buyingOrder_1Time).do(order, Conversion_1, orderInvestment_1)
+schedule.every().day.at(buyingOrder_1Time).do(order, Conversion_1, orderInvestment_1)
 #schedule.every(10).seconds.do(order, Conversion_1, orderInvestment_1)
 # order 2  # only if needed
 # schedule.every().day.at(buyingOrder_2Time).do(order, Conversion_2, orderInvestment_2)
