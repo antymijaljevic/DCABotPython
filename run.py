@@ -18,7 +18,7 @@ exchange = ccxt.binance({
 # exchange.set_sandbox_mode(True)
 
 # prevents from buying dip multiple times on the same day
-stamp = ['2021-09-26SOL']
+stamp = []
 
 
 # variables to be set up manually by a user needs
@@ -47,7 +47,7 @@ def binanceAPI(response):
             data = response
             break
         except ccxt.NetworkError as e:
-            print(exchange.id, 'Binance API error :', str(e))
+            print(exchange.id, 'Binance API error :'+now[:19], str(e))
             time.sleep(1)
     return data
 
