@@ -17,9 +17,8 @@ exchange = ccxt.binance({
 # set TRUE for the binance testnet and change to the API testnet key
 # exchange.set_sandbox_mode(True)
 
-# prevents from buying same dip percentage multiple times on a same day
+# prevents from buying same dip multiple times on a same day
 stamp = []
-
 
 # variables to be set up manually by a user needs
 Conversion_1 = 'ADA/BUSD' # put here you conversion pair 1
@@ -109,8 +108,6 @@ def dipAlert():
     # checking if there is any below set dip percentage
     for ticker, percentage in pairsPer.items():
         if percentage[0] < dipPercentage:
-
-
             if ticker in Conversion_1:
                 pricePerIn = Conversion_1SecondTicker
             else:
@@ -122,15 +119,16 @@ def dipAlert():
             telegram_send.send(messages=[telMsg])
             print(ticker+" DIP ALERT ... SENT", now[:19])
 
-            # remove stamps from previous day and start with empty list for a new day
-            if now[8:10] != stamp[0][8:10]:
-                stamp = []
-            # buy each dip percentage staring from -10 only once per day
+
+            # buy each dip staring from -10 only once per day
             stampCreate = now[:10]+ticker
             if stampCreate not in stamp:
                 stamp.append(stampCreate)
                 order(ticker+"/"+pricePerIn, dipInvestment)
-                print(ticker + " DIP BUYING ORDER HAS BEEN REQUESTED AT "+str(int(percentage[0]))+"%","TIME: "+now[:19])
+                print(ticker + " DIP BUYING ORDER HAS BEEN REQUESTED, DIP AT "+str(int(percentage[0]))+"%,","TIME: "+now[:19])
+                # removes stamps from previous day and starting with new ones
+                if now[8:10] != stamp[0][8:10]:
+                    stamp = [stampCreate]
         else:
             print(ticker + ", NO DIP, STATUS... OK", now[:19])
 
