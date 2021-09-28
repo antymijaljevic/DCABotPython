@@ -33,7 +33,7 @@ Conversion_2SecondTicker = matchCon_2.group(2)
 walletBalanceCheck = "12:00" # at what time you want to get wallet balance report?
 dipPercentage = -10 # here you set the depth of a dip
 checkForDip = 15 # dip check frequency (in minutes)
-dipInvestment = 25 # how much you want to invest during a dip?
+dipInvestment = 51 # how much you want to invest during a dip?
 buyingOrder_1Time = '01:00' # at what time you want to execute first buying order?
 buyingOrder_2Time = '01:00' # at what time you want to execute second buying order?
 orderInvestment_1 = 11 # how much you want to invest in order 1?
@@ -126,7 +126,7 @@ def dipAlert():
             if now[8:10] != stamp[0][8:10]:
                 stamp = []
             # buy each dip percentage staring from -10 only once per day
-            stampCreate = now[:10]+ticker+str(int(percentage[0]))
+            stampCreate = now[:10]+ticker
             if stampCreate not in stamp:
                 stamp.append(stampCreate)
                 order(ticker+"/"+pricePerIn, dipInvestment)
@@ -159,7 +159,7 @@ def order(symbol, theInvestment):
    
     # sending report to telegram and spreadsheet
     sendSheetReport(sheet, 2, now, marketPrice, invested, commission, assetQty, ticker, tickerPercentage)
-    telMsg = "***BUYING ORDER FULFILLED***\n\n"+"Date: "+now[:19]+"\nAt market price: "+str(marketPrice)+" $\n"+"Coin quantity: "+str(assetQty)+" "+ticker+"\n"+"Invested: "+str(invested)+ " $"+"\n"+"24h%: "+str(tickerPercentage)+"%"
+    telMsg = "***BUYING ORDER FULFILLED***\n\n"+"Date: "+now[:19]+"\nAt market price: "+str(marketPrice)+" $\n"+"Coin quantity: "+str(assetQty)+" "+ticker+"\n"+"Invested: "+str(invested)+ " $"
     telegram_send.send(messages=[telMsg])
     print(ticker + " ORDER FULFILLED ... DONE", now[:19])
 
