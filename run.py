@@ -17,7 +17,7 @@ exchange = ccxt.binance({
 # set TRUE for the binance testnet and change to the API testnet key
 # exchange.set_sandbox_mode(True)
 
-# prevents from buying dip multiple times on the same day
+# prevents from buying same dip percentage multiple times on a same day
 stamp = []
 
 
@@ -33,7 +33,7 @@ Conversion_2SecondTicker = matchCon_2.group(2)
 walletBalanceCheck = "12:00" # at what time you want to get wallet balance report?
 dipPercentage = -10 # here you set the depth of a dip
 checkForDip = 15 # dip check frequency (in minutes)
-dipInvestment = 51 # how much you want to invest during a dip?
+dipInvestment = 25 # how much you want to invest during a dip?
 buyingOrder_1Time = '01:00' # at what time you want to execute first buying order?
 buyingOrder_2Time = '01:00' # at what time you want to execute second buying order?
 orderInvestment_1 = 11 # how much you want to invest in order 1?
@@ -109,6 +109,8 @@ def dipAlert():
     # checking if there is any below set dip percentage
     for ticker, percentage in pairsPer.items():
         if percentage[0] < dipPercentage:
+
+
             if ticker in Conversion_1:
                 pricePerIn = Conversion_1SecondTicker
             else:
@@ -120,14 +122,15 @@ def dipAlert():
             telegram_send.send(messages=[telMsg])
             print(ticker+" DIP ALERT ... SENT", now[:19])
 
-            # buy only once for that day
-            if now[:10]+ticker not in stamp:
-                stamp.append(now[:10]+ticker)
-                print(stamp)
+            # remove stamps from previous day and start with empty list for a new day
+            if now[8:10] != stamp[0][8:10]:
+                stamp = []
+            # buy each dip percentage staring from -10 only once per day
+            stampCreate = now[:10]+ticker+str(int(percentage[0]))
+            if stampCreate not in stamp:
+                stamp.append(stampCreate)
                 order(ticker+"/"+pricePerIn, dipInvestment)
-                print(ticker + " DIP BUYING ORDER HAS BEEN REQUESTED", now[:19])
-                if now[5:7] != stamp[0][5:7]:
-                    stamp = []
+                print(ticker + " DIP BUYING ORDER HAS BEEN REQUESTED AT "+str(int(percentage[0]))+"%","TIME: "+now[:19])
         else:
             print(ticker + ", NO DIP, STATUS... OK", now[:19])
 
@@ -166,7 +169,7 @@ def order(symbol, theInvestment):
 schedule.every().day.at(walletBalanceCheck).do(walletBalance)
 #schedule.every(15).seconds.do(walletBalance)
 # dip alert
-#schedule.every(checkForDip).hours.do(dipAlert)
+#schedule.every(5).seconds.do(dipAlert)
 schedule.every(checkForDip).minutes.do(dipAlert)
 # order 1
 schedule.every().day.at(buyingOrder_1Time).do(order, Conversion_1, orderInvestment_1)
