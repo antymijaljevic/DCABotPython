@@ -159,7 +159,7 @@ def order(symbol, theInvestment):
    
     # sending report to telegram and spreadsheet
     sendSheetReport(sheet, 2, now, marketPrice, invested, commission, assetQty, ticker, tickerPercentage)
-    telMsg = "***BUYING ORDER FULFILLED***\n\n"+"Date: "+now[:19]+"\nAt market price: "+str(marketPrice)+" $\n"+"Coin quantity: "+str(assetQty)+" "+ticker+"\n"+"Invested: "+str(invested)+ " $"
+    telMsg = "***BUYING ORDER FULFILLED***\n\n"+"Date: "+now[:19]+"\nAt market price: "+str(marketPrice)+" $\n"+"Coin quantity: "+str(assetQty)+" "+ticker+"\n"+"Invested: "+str(invested)+ " $"+"\n"+"24h%: "+str(tickerPercentage)+"%"
     telegram_send.send(messages=[telMsg])
     print(ticker + " ORDER FULFILLED ... DONE", now[:19])
 
