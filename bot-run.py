@@ -15,7 +15,7 @@ class Binance():
         # stable coin value to buy or sell
         self.stableValue = 10.5
         # investment on dip
-        self.dipInvestment = 50
+        self.dipInvestment = 20
         # alert percentage
         self.alertPer = -10
         # sell limit percentage
@@ -45,8 +45,8 @@ class Binance():
         sheetReports =[
             [p_1, p_2, p_3, p_4, p_5, p_6, str(p_7)+"%"], # buying orders
             [p_1, p_2, p_3, p_4, p_5, p_6, str(p_7)+"%"], # selling orders
+            [p_1, str(p_2)+"$", str(p_3)+"$", p_4, str(p_5)+"%", str(p_6)], # dip orders
             [str(p_1)+"\n"+now[:19]], # spot wallet report
-            [now[:19], p_1, str(p_2)+"$", str(p_3)+"%"], # dip alerts
             ["CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19]] # error loger
         ]
 
@@ -54,8 +54,8 @@ class Binance():
         telegramReports = [
             ["***BUYING ORDER FULFILLED***\n\nAt market price: "+str(p_2)+" $"+"\nCoin quantity: "+str(p_5)+" "+str(p_6)+"\nInvested: "+str(p_3)+ " $\nPercentage: "+str(p_7)+"%\n\n"+now[:19]], # buying order
             ["***SELLING ORDER FULFILLED***\n\nSold at market price: "+str(p_2)+" $"+"\nCoin quantity sold: "+str(p_5)+" "+str(p_6)+"\nValue sold: "+str(p_3)+ " $\nPercentage: "+str(p_7)+"%\n\n"+now[:19]], # selling order
+            ["***DIP ORDER***\n\n"+str(p_4)+"\n"+str(p_7)+" $\n"+str(p_5)+"%\n\n"+now[:19]], # dip orders
             ["***SPOT WALLET BALANCE***\n\n"+str(p_1)+"\n"+now[:19]], # spot wallet report
-            ["***DIP ALERT***\n\n"+str(p_1)+"\n"+str(p_2)+"$\n"+str(p_3)+"%\n\n"+now[:19]], # dip alert
             ["CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19]] # error loger
         ]
 
@@ -63,8 +63,8 @@ class Binance():
         terNot = [
             "BUYING ORDER EXECUTED ... "+now[:19], # buying order
             "SELLING ORDER EXECUTED ... "+now[:19], # selling order
+            "DIP ALERT TRIGGERED "+str(p_4)+ "... "+now[:19], # dip orders
             "SPOT WALLET BALANCE HAS BEEN SENT ... "+now[:19], # spot wallet report
-            "DIP ALERT TRIGGERED "+str(p_1)+ "... "+now[:19], # dip alert
             "CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19] # error loger
         ]
 
@@ -126,7 +126,7 @@ class Binance():
                 balanceReport += x['asset']+": "+str(quantity)+"\n"
 
         # send reports
-        self.sendReports(2, 2, balanceReport)
+        self.sendReports(3, 3, balanceReport)
 
     
     # buy market order
@@ -148,6 +148,7 @@ class Binance():
         perInfoData = self.apiCall(lambda: self.client.get_ticker(symbol=self.pair))
         currentPer = round(float(perInfoData['priceChangePercent']), 2)
 
+        # send report
         self.sendReports(0, 0, date, filledAt, invested, commission, assetQty, assetTicker, currentPer)
 
 
@@ -169,14 +170,35 @@ class Binance():
         perInfoData = self.apiCall(lambda: self.client.get_ticker(symbol=self.pair))
         currentPer = round(float(perInfoData['priceChangePercent']), 2)
 
+        # send report
         self.sendReports(1, 1, date, soldAt, valueSold, commission, assetQtySold, assetTicker, currentPer)
 
     
-    # limit sell order
-    def limitSell(self, pair, sellingValue, atPrice):
-        limitSellData = self.apiCall(lambda: self.client.order_limit_sell(symbol=pair, quantity=self.getCeilingVal(pair, sellingValue), price=atPrice))
-        print(limitSellData)
+    # buy - limit sell order
+    def buyLimitSell(self, pair, buySellValue, atPrice, per, lastPrice):
+        # buy market order
+        buyData = self.apiCall(lambda: self.client.order_market_buy(symbol=pair, quantity=self.getCeilingVal(pair, buySellValue)))
 
+        # convert unix time
+        unixTime = int(buyData['transactTime'] / 1000)
+        norTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(unixTime))
+
+        # necessary info for the report
+        date = norTime
+        filledAt = round(float(buyData['fills'][0]['price']), 2)
+        invested = round(float(buyData['cummulativeQuoteQty']), 2)
+        assetTicker = pair[:-4]
+        buyOrSell = buyData['side']
+        # send reports
+        self.sendReports(2, 2, date, filledAt, invested, assetTicker, per, buyOrSell, lastPrice)
+
+        # place limit sell order
+        limitSellData = self.apiCall(lambda: self.client.order_limit_sell(symbol=pair, quantity=self.getCeilingVal(pair, buySellValue-1), price=atPrice))
+        sellAt = round(float(limitSellData['price']), 2)
+        sellValue = round(float(limitSellData['origQty']) * float(lastPrice), 2)
+        buyOrSellorder = limitSellData['side']
+        # send reports
+        self.sendReports(2, 2, date, sellAt, sellValue, assetTicker, "N/A", "LIMIT "+buyOrSellorder)
 
     # dip alert
     def dipAlert(self):
@@ -194,15 +216,10 @@ class Binance():
                 stamp = pair['symbol'] + now[:10]
                 if stamp not in self.historyStamps:
                     self.historyStamps.append(stamp)
-                    print(self.historyStamps)
-                    # send reports
-                    self.sendReports(3, 3, symbol, price, percentage)
-                    # Buy coin/token on -10% and sell higher
-                    self.buyMarket(pair['symbol'], self.dipInvestment)
-                    sellAtPrice = round(price * (1 + self.sellLimitPer), 2)
-                    # print(sellAtPrice)
-                    self.limitSell(pair['symbol'], self.dipInvestment-0.30, sellAtPrice)
 
+                    # Buy coin/token on -10% and sell higher
+                    sellAtPrice = round(price * (1 + self.sellLimitPer), 2)
+                    self.buyLimitSell(symbol, self.dipInvestment, sellAtPrice, percentage, price)
 
         # remove history stamps from previous month
         if now[5:7] != self.historyStamps[0][-5:-3]:
@@ -219,7 +236,7 @@ if __name__ == "__main__":
     # bot.spotWalletBalance()
     # bot.buyMarket(bot.pair, bot.stableValue)
     # bot.sellMarket(bot.pair, bot.stableValue)
-    # bot.limitSell()
+    # bot.buyLimitSell()
     # bot.dipAlert()
 
     #spot wallet
