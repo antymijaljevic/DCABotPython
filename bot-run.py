@@ -1,7 +1,7 @@
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
 from binance.helpers import round_step_size
-import config, json, telegram_send, schedule, gspread, time
+import config, telegram_send, schedule, gspread, time
 from datetime import datetime
 from os import system
 
@@ -9,15 +9,19 @@ from os import system
 class Binance():
     def __init__(self):
         #clear terminal
-        system('cls')
-        # coin/token pair to buy
-        self.token = 'LINK'
-        self.stableCoin = 'BUSD'
-        self.pair = self.token+self.stableCoin
+        system('cls') # put 'clear' for linux server
+        # coin/token pair to buy for DCA
+        self.pair = 'ADABUSD'
         # stable coin value to buy or sell
         self.stableValue = 10.5
+        # investment on dip
+        self.dipInvestment = 50
         # alert percentage
         self.alertPer = -10
+        # sell limit percentage
+        self.sellLimitPer = 0.03
+        # buying history
+        self.historyStamps = []
 
         # time schedule
         self.walletTime = '12:00'
@@ -51,7 +55,7 @@ class Binance():
             ["***BUYING ORDER FULFILLED***\n\nAt market price: "+str(p_2)+" $"+"\nCoin quantity: "+str(p_5)+" "+str(p_6)+"\nInvested: "+str(p_3)+ " $\nPercentage: "+str(p_7)+"%\n\n"+now[:19]], # buying order
             ["***SELLING ORDER FULFILLED***\n\nSold at market price: "+str(p_2)+" $"+"\nCoin quantity sold: "+str(p_5)+" "+str(p_6)+"\nValue sold: "+str(p_3)+ " $\nPercentage: "+str(p_7)+"%\n\n"+now[:19]], # selling order
             ["***SPOT WALLET BALANCE***\n\n"+str(p_1)+"\n"+now[:19]], # spot wallet report
-            ["***DIP ALERT***\n\n"+p_1+"\n"+str(p_2)+"$\n"+str(p_3)+"%\n\n"+now[:19]], # dip alert
+            ["***DIP ALERT***\n\n"+str(p_1)+"\n"+str(p_2)+"$\n"+str(p_3)+"%\n\n"+now[:19]], # dip alert
             ["CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19]] # error loger
         ]
 
@@ -60,7 +64,7 @@ class Binance():
             "BUYING ORDER EXECUTED ... "+now[:19], # buying order
             "SELLING ORDER EXECUTED ... "+now[:19], # selling order
             "SPOT WALLET BALANCE HAS BEEN SENT ... "+now[:19], # spot wallet report
-            "DIP ALERT TRIGGERED "+p_1+ "... "+now[:19], # dip alert
+            "DIP ALERT TRIGGERED "+str(p_1)+ "... "+now[:19], # dip alert
             "CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19] # error loger
         ]
 
@@ -85,35 +89,26 @@ class Binance():
                 # try every 5 min
                 time.sleep(300)
 
-        # print(json.dumps(response, indent=2))
         return response
 
 
     # get ceiling value of coin/token
-    def getCeilingVal(self):
-        pairData = self.apiCall(lambda: self.client.get_symbol_ticker(symbol=self.pair))
+    def getCeilingVal(self, pair, investment):
+        pairData = self.apiCall(lambda: self.client.get_symbol_ticker(symbol=pair))
         pairPrice = pairData["price"]
-        ceilingVal = float(self.stableValue) / float(pairPrice)
+        ceilingVal = float(investment) / float(pairPrice)
 
         # round qty decimals to match a lot size
-        aLotSize = self.getLotSize()
+        aLotSize = self.getLotSize(pair)
         rounded_amount = round_step_size(ceilingVal, aLotSize)
 
         # print(rounded_amount)
         return rounded_amount
-
-
-    # get pair percentage
-    def getPercentage(self):
-        pairData = self.apiCall(lambda: self.client.get_ticker(symbol=self.pair))
-        pairPer = round(float(pairData['priceChangePercent']), 2)
-        # print(pairPer)
-        return pairPer
-
+    
 
     # get a lot size
-    def getLotSize(self):
-        info = self.apiCall(lambda: self.client.get_symbol_info(self.pair))
+    def getLotSize(self, pair):
+        info = self.apiCall(lambda: self.client.get_symbol_info(pair))
         lotSize = float(info['filters'][2]['minQty'])
         # print(lotSize)
         return lotSize
@@ -135,9 +130,9 @@ class Binance():
 
     
     # buy market order
-    def buyMarket(self):
+    def buyMarket(self, pair, investment):
         # make market buy order
-        orderData = self.apiCall(lambda: self.client.order_market_buy(symbol=self.pair, quantity=self.getCeilingVal()))
+        orderData = self.apiCall(lambda: self.client.order_market_buy(symbol=pair, quantity=self.getCeilingVal(pair, investment)))
 
         # convert unix time
         unixTime = int(orderData['transactTime'] / 1000)
@@ -149,16 +144,16 @@ class Binance():
         invested = round(float(orderData['cummulativeQuoteQty']), 2)
         commission = float(orderData['fills'][0]['commission'])
         assetQty = float(orderData['fills'][0]['qty'])
-        assetTicker = self.token
-        currentPer = self.getPercentage()
+        assetTicker = pair[:-4]
+        perInfoData = self.apiCall(lambda: self.client.get_ticker(symbol=self.pair))
+        currentPer = round(float(perInfoData['priceChangePercent']), 2)
 
         self.sendReports(0, 0, date, filledAt, invested, commission, assetQty, assetTicker, currentPer)
 
 
     # sell market order
-    def sellMarket(self):
-        # make market buy order
-        orderData = self.apiCall(lambda: self.client.order_market_sell(symbol=self.pair, quantity=self.getCeilingVal()))
+    def sellMarket(self, pair, sellingValue):
+        orderData = self.apiCall(lambda: self.client.order_market_sell(symbol=pair, quantity=self.getCeilingVal(pair, sellingValue)))
 
         # convert unix time
         unixTime = int(orderData['transactTime'] / 1000)
@@ -170,26 +165,48 @@ class Binance():
         valueSold = round(float(orderData['cummulativeQuoteQty']), 2)
         commission = float(orderData['fills'][0]['commission'])
         assetQtySold = float(orderData['fills'][0]['qty'])
-        assetTicker = self.token
-        currentPer = self.getPercentage()
+        assetTicker = pair[:-4]
+        perInfoData = self.apiCall(lambda: self.client.get_ticker(symbol=self.pair))
+        currentPer = round(float(perInfoData['priceChangePercent']), 2)
 
         self.sendReports(1, 1, date, soldAt, valueSold, commission, assetQtySold, assetTicker, currentPer)
+
+    
+    # limit sell order
+    def limitSell(self, pair, sellingValue, atPrice):
+        limitSellData = self.apiCall(lambda: self.client.order_limit_sell(symbol=pair, quantity=self.getCeilingVal(pair, sellingValue), price=atPrice))
+        print(limitSellData)
 
 
     # dip alert
     def dipAlert(self):
+        # remove history stamps from previous month
+        now = str(datetime.now())
         # list of coins/token to be alerted
-        pairList = ['BTCBUSD', 'ETHBUSD', 'ADABUSD', 'SOLBUSD', 'XRPBUSD', 'BNBBUSD', 'DOTBUSD', 'LINKBUSD']
+        pairList = ['BTCBUSD', 'ETHBUSD', 'ADABUSD', 'SOLBUSD', 'LINKBUSD']
         info = self.apiCall(lambda: self.client.get_ticker())
 
-        # get those below -9.90
-        for pair in info:
+        # list assets below set minus precentage
+        for pair in info:                    
             if pair['symbol'] in pairList and float(pair['priceChangePercent']) < self.alertPer:
                 symbol, percentage, price = pair['symbol'], round(float(pair['priceChangePercent']), 2), round(float(pair['lastPrice']), 2)
-                # send reports
-                self.sendReports(3, 3, symbol, price, percentage)
+                # create alert / buying / selling history
+                stamp = pair['symbol'] + now[:10]
+                if stamp not in self.historyStamps:
+                    self.historyStamps.append(stamp)
+                    print(self.historyStamps)
+                    # send reports
+                    self.sendReports(3, 3, symbol, price, percentage)
+                    # Buy coin/token on -10% and sell higher
+                    self.buyMarket(pair['symbol'], self.dipInvestment)
+                    sellAtPrice = round(price * (1 + self.sellLimitPer), 2)
+                    # print(sellAtPrice)
+                    self.limitSell(pair['symbol'], self.dipInvestment-0.30, sellAtPrice)
 
-                # NEXT BUY OR SELL THE DIP ALGORITHM
+
+        # remove history stamps from previous month
+        if now[5:7] != self.historyStamps[0][-5:-3]:
+            self.historyStamps = []
 
 
 if __name__ == "__main__":
@@ -200,18 +217,19 @@ if __name__ == "__main__":
     # bot.getPercentage()
     # bot.getLotSize()
     # bot.spotWalletBalance()
-    # bot.buyMarket()
-    # bot.sellMarket()
+    # bot.buyMarket(bot.pair, bot.stableValue)
+    # bot.sellMarket(bot.pair, bot.stableValue)
+    # bot.limitSell()
     # bot.dipAlert()
 
-    # spot wallet
+    #spot wallet
     schedule.every().day.at(bot.walletTime).do(bot.spotWalletBalance)
     
     # market buy order
-    schedule.every().day.at(bot.buyTime).do(bot.buyMarket)
+    schedule.every().day.at(bot.buyTime).do(bot.buyMarket, bot.pair, bot.stableValue)
 
-    # # market sell order
-    # schedule.every().day.at(bot.sellTime).do(bot.sellMarket)
+    # market sell order
+    # schedule.every().day.at(bot.sellTime).do(bot.sellMarket, bot.pair, bot.stableValue)
 
     # dip alert
     schedule.every(bot.alertTime).minutes.do(bot.dipAlert)
