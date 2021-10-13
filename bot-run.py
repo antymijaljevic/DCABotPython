@@ -14,11 +14,11 @@ class Binance():
         # coin/token pair to buy for DCA
         self.pair = 'ADABUSD'
         # stable coin value to buy or sell
-        self.stableValue = 10.1
+        self.stableValue = 10.2
         # investment on dip
-        self.dipInvestment = 20.1
+        self.dipInvestment = 20.2
         # alert percentage
-        self.alertPer = -1
+        self.alertPer = -10
         # sell limit percentage
         self.sellLimitPer = 0.03
         # buying history
