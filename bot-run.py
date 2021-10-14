@@ -15,6 +15,8 @@ class Binance():
         self.pair = 'ADABUSD'
         # stable coin value to buy or sell
         self.stableValue = 10.2
+        # list of coins/token to be alerted
+        self.pairList = ['BTCBUSD', 'ETHBUSD', 'SOLBUSD', 'LINKBUSD', 'DOTBUSD', 'BNBBUSD']
         # investment on dip
         self.dipInvestment = 20.2
         # alert percentage
@@ -214,13 +216,11 @@ class Binance():
     def dipAlert(self):
         # remove history stamps from previous month
         now = str(datetime.now())
-        # list of coins/token to be alerted
-        pairList = ['BTCBUSD', 'ETHBUSD', 'SOLBUSD', 'LINKBUSD', 'DOTBUSD', 'BNBBUSD']
         info = self.apiCall(lambda: self.client.get_ticker())
 
         # list assets below set minus precentage
         for pair in info:                    
-            if pair['symbol'] in pairList and float(pair['priceChangePercent']) < self.alertPer:
+            if pair['symbol'] in self.pairList and float(pair['priceChangePercent']) < self.alertPer:
                 symbol, percentage, price = pair['symbol'], round(float(pair['priceChangePercent']), 2), round(float(pair['lastPrice']), 2)
                 # create alert / buying / selling history
                 stamp = pair['symbol'] + now[:10]

@@ -1,0 +1,1 @@
+while true;do python bot-run.py sleep 300;done
