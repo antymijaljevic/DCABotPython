@@ -11,14 +11,36 @@ class Binance():
     def __init__(self):
         #clear terminal
         system('cls') # put 'clear' for linux server
-        # coin/token pair to buy for DCA
-        self.pair = 'ADABUSD'
-        # stable coin value to buy or sell
-        self.stableValue = 10.2
+        # spreadsheet credentials filename
+        self.ssCredFile = 'sheet_credentials.json'
+        # spreadsheet unique ID
+        self.ssId = '1e-I7RvxlIU3SvvW4i5OD3GCVPqj5Ka5anDbyUOc93oY'
+
+        # coin/token pair_1 to buy for DCA
+        self.pair_1 = 'ETHBUSD'
+        # stable coin value to buy pair 1
+        self.stableValue_1 = 10.2
+        # time to buy pair 1
+        self.buyTime_1 = '01:00'
+
+        # coin/token pair_2 to buy for DCA
+        self.pair_2 = 'BTCBUSD'
+        # stable coin value to buy pair 2
+        self.stableValue_2 = 10.2
+        # time to buy pair 2
+        self.buyTime_2 = '01:30'
+
+        # pair to sell
+        self.sellPair = 'BTCBUSD'
+        # stable coin value to sell
+        self.sellValueOrder = 10.1 # min 10.1
+        # sell time
+        self.sellTime = '01:00'
+
         # list of coins/token to be alerted
         self.pairList = ['BTCBUSD', 'ETHBUSD', 'SOLBUSD', 'LINKBUSD', 'DOTBUSD', 'BNBBUSD']
         # investment on dip
-        self.dipInvestment = 20.2
+        self.dipInvestment = 1000
         # alert percentage
         self.alertPer = -10
         # sell limit percentage
@@ -26,60 +48,9 @@ class Binance():
         # buying history
         self.historyStamps = []
 
-        # time schedule
+        # time for the wallet and the alert
         self.walletTime = '12:00'
-        self.buyTime = '01:00'
-        self.sellTime = '01:00'
         self.alertTime = 5 # in min
-
-
-
-    # connecting on google ss
-    def sendReports(self, sheetNum, p_1, p_2=None, p_3=None, p_4=None, p_5=None, p_6=None, p_7=None):
-        #current date&time
-        now = str(datetime.now())
-
-        # google ss api
-        spreadsheet_credentials = gspread.service_account(filename='sheet_credentials.json')
-        spreadsheet_id = spreadsheet_credentials.open_by_key('1e-I7RvxlIU3SvvW4i5OD3GCVPqj5Ka5anDbyUOc93oY')
-        sheet = spreadsheet_id.get_worksheet(sheetNum)
-
-        # sheet reports
-        sheetReports =[
-            [p_1, p_2, p_3, p_4, p_5, p_6, str(p_7)+"%"], # buying orders
-            [p_1, p_2, p_3, p_4, p_5, p_6, str(p_7)+"%"], # selling orders
-            [p_1, str(p_2)+"$", str(p_3)+"$", p_4, str(p_5)+"%", str(p_6)], # dip buy market order
-            [p_1, str(p_2)+"$", str(p_3)+"$", p_4, str(p_5), str(p_6)], # dip limit sell order
-            [str(p_1)+"\n"+now[:19]], # spot wallet report
-            ["CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19]] # error loger
-        ]
-
-        # telegram notifications
-        telegramReports = [
-            ["***BUYING ORDER FULFILLED***\n\nAt market price: "+str(p_2)+" $"+"\nCoin quantity: "+str(p_5)+" "+str(p_6)+"\nInvested: "+str(p_3)+ " $\nPercentage: "+str(p_7)+"%\n\n"+now[:19]], # buying order
-            ["***SELLING ORDER FULFILLED***\n\nSold at market price: "+str(p_2)+" $"+"\nCoin quantity sold: "+str(p_5)+" "+str(p_6)+"\nValue sold: "+str(p_3)+ " $\nPercentage: "+str(p_7)+"%\n\n"+now[:19]], # selling order
-            ["***DIP MARKET BUY ORDER FULFILLED***\n\n"+str(p_4)+"\nFilled at: "+str(p_7)+"$\n"+str(p_5)+"%\n\n"+now[:19]], # dip buy market order
-            ["***DIP LIMIT SELL ORDER FULFILLED***\n\n"+str(p_4)+"\nSell at: "+str(p_2)+"$\n\n"+now[:19]], # dip limit sell order
-            ["***SPOT WALLET BALANCE***\n\n"+str(p_1)+"\n"+now[:19]], # spot wallet report
-            ["CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19]] # error loger
-        ]
-
-        # terminal notifications
-        terNot = [
-            "BUYING ORDER EXECUTED ... "+now[:19], # buying order
-            "SELLING ORDER EXECUTED ... "+now[:19], # selling order
-            "DIP MARKET BUY ORDER EXECUTED "+str(p_4)+ "... "+now[:19], # dip buy market order
-            "DIP LIMIT SELL ORDER EXECUTED "+str(p_4)+ "... "+now[:19], # dip limit sell order
-            "SPOT WALLET BALANCE HAS BEEN SENT ... "+now[:19], # spot wallet report
-            "CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19] # error loger
-        ]
-
-        # append report to sheet
-        sheet.append_row(sheetReports[sheetNum])
-        # send telegram notification
-        telegram_send.send(messages=telegramReports[sheetNum])
-        # program status
-        print(terNot[sheetNum])
 
 
     # get response from API
@@ -92,11 +63,70 @@ class Binance():
                 response = method()
                 break
             except BinanceAPIException as e:
-                self.sendReports(5, e.status_code, e.message)
+                self.sendSheet(6, 2, e.status_code, e.message)
+                self.sendTel(5, e.status_code, e.message)
+                self.sendTerminal(5, e.status_code, e.message)
+
                 # try every 5 min
                 time.sleep(300)
 
         return response
+
+
+
+    # connecting on google ss and sending sheet report
+    def sendSheet(self, sheetNum, reportNum, p_1, p_2=None, p_3=None, p_4=None, p_5=None, p_6=None, p_7=None, p_8=None):
+        #current date&time
+        now = str(datetime.now())
+
+        # google ss api
+        spreadsheet_credentials = gspread.service_account(filename=self.ssCredFile)
+        spreadsheet_id = spreadsheet_credentials.open_by_key(self.ssId)
+        sheet = spreadsheet_id.get_worksheet(sheetNum)
+
+        # sheet reports
+        sheetReports =[
+            [p_1, p_2, p_3, p_4, p_5, p_6, str(p_7)+"%", str(p_8)], # buying orders 1, 2, selling orders, dip buy market
+            [str(p_1)+"\n"+now[:19]], # spot wallet report
+            ["CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19]], # error loger
+            [p_1, p_2, p_3, p_4, p_5] # limit sell order
+        ]
+
+        # append report to sheet
+        sheet.append_row(sheetReports[reportNum])
+
+    # telegram notifications
+    def sendTel(self, reportNum, p_1, p_2=None, p_3=None, p_4=None, p_5=None, p_6=None):
+        #current date&time
+        now = str(datetime.now())
+        # telegram notifications
+        telegramReports = [
+            ["***BUYING ORDER FULFILLED***\n\nBought at market price: "+str(p_1)+" $"+"\nCoin quantity: "+str(p_2)+" "+str(p_3)+"\nInvested: "+str(p_4)+ " $\nPercentage: "+str(p_5)+"%\n\n"+str(p_6)], # buying orders
+            ["***SELLING ORDER FULFILLED***\n\nSold at market price: "+str(p_1)+" $"+"\nCoin quantity sold: "+str(p_2)+" "+str(p_3)+"\nValue sold: "+str(p_4)+ " $\nPercentage: "+str(p_5)+"%\n\n"+str(p_6)], # selling order
+            ["***DIP MARKET BUY ORDER FULFILLED***\n\nBought at market price: "+str(p_1)+" $"+"\nCoin quantity: "+str(p_2)+" "+str(p_3)+"\nInvested: "+str(p_4)+ " $\nPercentage: "+str(p_5)+"%\n\n"+str(p_6)], # dip buy market order
+            ["***DIP LIMIT SELL ORDER FULFILLED***\n\nCoin/Token: "+str(p_1)+"\nSell at: "+str(p_2)+"$\n"+"Selling value: "+str(p_3)+"\n\n"+str(p_4)], # dip limit sell order
+            ["***SPOT WALLET BALANCE***\n\n"+str(p_1)+"\n"+now[:19]], # spot wallet report
+            ["CODE: "+str(p_1)+"\n\nSERVER MESSAGE: "+str(p_2)+"\n\n"+now[:19]], # error loger
+            ["***DIP ALERT TRIGGERED***\n\n"+str(p_1)+"\n"+"Price: "+str(p_2)+"$\n"+str(p_3)+"%\n\n"+now[:19]] # dip alert
+        ]
+
+        telegram_send.send(messages=telegramReports[reportNum])
+
+    def sendTerminal(self, reportNum, p_1=None, p_2=None):
+        #current date&time
+        now = str(datetime.now())
+        # terminal statuses
+        terNot = [
+            str(p_1)+" BUYING ORDER EXECUTED ... "+str(p_2), # buying pair 1 | pair 2
+            str(p_1)+" SELLING ORDER EXECUTED ... "+str(p_2), # selling order
+            str(p_1)+" DIP MARKET BUY ORDER EXECUTED ... "+str(p_2), # dip buy market order
+            str(p_1)+" DIP LIMIT SELL ORDER EXECUTED ... "+str(p_2), # dip limit sell order
+            "SPOT WALLET BALANCE HAS BEEN SENT ... "+now[:19], # spot wallet report
+            "CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19] # error loger
+        ]
+
+        # program status
+        print(terNot[reportNum])
 
 
     # get ceiling value of coin/token
@@ -120,6 +150,85 @@ class Binance():
         # print(lotSize)
         return lotSize
 
+    
+    # buy market order
+    def buyMarket(self, sheetNum, repNum, pair, investment, dipBuy=0):
+        # make market buy order
+        orderData = self.apiCall(lambda: self.client.order_market_buy(symbol=pair, quantity=self.getCeilingVal(pair, investment)))
+
+        # convert unix time
+        unixTime = int(orderData['transactTime'] / 1000)
+        norTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(unixTime))
+
+        # necessary info for the report
+        date = norTime
+        filledAt = round(float(orderData['fills'][0]['price']), 2)
+        invested = round(float(orderData['cummulativeQuoteQty']), 2)
+        commission = float(orderData['fills'][0]['commission'])
+        assetQty = float(orderData['fills'][0]['qty'])
+        assetTicker = pair[:-4]
+        perInfoData = self.apiCall(lambda: self.client.get_ticker(symbol=pair))
+        currentPer = round(float(perInfoData['priceChangePercent']), 2)
+        buyOrSell = orderData['side']
+
+        # send reports
+        self.sendSheet(sheetNum, repNum-dipBuy, date, filledAt, invested, commission, assetQty, assetTicker, currentPer, buyOrSell)
+        self.sendTel(repNum, filledAt, assetQty, assetTicker, invested, currentPer, date)
+        self.sendTerminal(repNum, assetTicker, date)
+
+
+    # sell market order
+    def sellMarket(self, sheetNum, repNum, pair, sellingValue):
+        # commission fee + spread fee
+        sellingValue = sellingValue * (1 - 0.015)
+
+        orderData = self.apiCall(lambda: self.client.order_market_sell(symbol=pair, quantity=self.getCeilingVal(pair, sellingValue)))
+
+        # convert unix time
+        unixTime = int(orderData['transactTime'] / 1000)
+        norTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(unixTime))
+
+        # necessary info for the report
+        date = norTime
+        soldAt = round(float(orderData['fills'][0]['price']), 2)
+        valueSold = round(float(orderData['cummulativeQuoteQty']), 2)
+        commission = float(orderData['fills'][0]['commission'])
+        assetQtySold = float(orderData['fills'][0]['qty'])
+        assetTicker = pair[:-4]
+        perInfoData = self.apiCall(lambda: self.client.get_ticker(symbol=pair))
+        currentPer = round(float(perInfoData['priceChangePercent']), 2)
+        buyOrSell = orderData['side']
+
+        # send reports
+        self.sendSheet(sheetNum, 0, date, soldAt, valueSold, commission, assetQtySold, assetTicker, currentPer, buyOrSell)
+        self.sendTel(repNum, soldAt, assetQtySold, assetTicker, valueSold, currentPer, date)
+        self.sendTerminal(repNum, assetTicker, date)
+
+    
+    # limit sell order
+    def limitSell(self, sheetNum, repNum, pair, sellValue, lastPrice):
+        # Buy coin/token on -% and sell higher
+        sellAtPrice = round(lastPrice * (1 + self.sellLimitPer), 2)
+        # commission fee + spread fee
+        sellValue = sellValue * (1 - 0.015)
+        limitSellData = self.apiCall(lambda: self.client.order_limit_sell(symbol=pair, quantity=self.getCeilingVal(pair, sellValue), price=sellAtPrice))
+
+        # convert unix time
+        unixTime = int(limitSellData['transactTime'] / 1000)
+        norTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(unixTime))
+
+        # necessary info for the report
+        date = norTime
+        sellAt = round(float(limitSellData['price']), 2)
+        sellValue = round(float(limitSellData['origQty']) * float(lastPrice), 2)
+        assetTicker = pair[:-4]
+        buyOrSellorder = "LIMIT "+limitSellData['side']
+
+        # send reports
+        self.sendSheet(sheetNum, repNum, date, sellAt, sellValue, assetTicker, buyOrSellorder)
+        self.sendTel(repNum, assetTicker, sellAt, sellValue, date)
+        self.sendTerminal(repNum, assetTicker, date)
+
 
     # get account balance
     def spotWalletBalance(self):
@@ -135,81 +244,9 @@ class Binance():
                 balanceReport += x['asset']+": "+str(quantity)+"\n"
 
         # send reports
-        self.sendReports(4, balanceReport)
-
-    
-    # buy market order
-    def buyMarket(self, pair, investment):
-        # make market buy order
-        orderData = self.apiCall(lambda: self.client.order_market_buy(symbol=pair, quantity=self.getCeilingVal(pair, investment)))
-
-        # convert unix time
-        unixTime = int(orderData['transactTime'] / 1000)
-        norTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(unixTime))
-
-        # necessary info for the report
-        date = norTime
-        filledAt = round(float(orderData['fills'][0]['price']), 2)
-        invested = round(float(orderData['cummulativeQuoteQty']), 2)
-        commission = float(orderData['fills'][0]['commission'])
-        assetQty = float(orderData['fills'][0]['qty'])
-        assetTicker = pair[:-4]
-        perInfoData = self.apiCall(lambda: self.client.get_ticker(symbol=self.pair))
-        currentPer = round(float(perInfoData['priceChangePercent']), 2)
-
-        # send report
-        self.sendReports(0, date, filledAt, invested, commission, assetQty, assetTicker, currentPer)
-
-
-    # sell market order
-    def sellMarket(self, pair, sellingValue):
-        orderData = self.apiCall(lambda: self.client.order_market_sell(symbol=pair, quantity=self.getCeilingVal(pair, sellingValue)))
-
-        # convert unix time
-        unixTime = int(orderData['transactTime'] / 1000)
-        norTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(unixTime))
-
-        # necessary info for the report
-        date = norTime
-        soldAt = round(float(orderData['fills'][0]['price']), 2)
-        valueSold = round(float(orderData['cummulativeQuoteQty']), 2)
-        commission = float(orderData['fills'][0]['commission'])
-        assetQtySold = float(orderData['fills'][0]['qty'])
-        assetTicker = pair[:-4]
-        perInfoData = self.apiCall(lambda: self.client.get_ticker(symbol=self.pair))
-        currentPer = round(float(perInfoData['priceChangePercent']), 2)
-
-        # send report
-        self.sendReports(1, date, soldAt, valueSold, commission, assetQtySold, assetTicker, currentPer)
-
-    
-    # buy - limit sell order
-    def buyLimitSell(self, pair, buySellValue, atPrice, per, lastPrice):
-        # buy market order
-        buyData = self.apiCall(lambda: self.client.order_market_buy(symbol=pair, quantity=self.getCeilingVal(pair, buySellValue)))
-
-        # convert unix time
-        unixTime = int(buyData['transactTime'] / 1000)
-        norTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(unixTime))
-
-        # necessary info for the report
-        date = norTime
-        filledAt = round(float(buyData['fills'][0]['price']), 2)
-        invested = round(float(buyData['cummulativeQuoteQty']), 2)
-        assetTicker = pair[:-4]
-        buyOrSell = buyData['side']
-        # send reports
-        self.sendReports(2, date, filledAt, invested, assetTicker, per, buyOrSell, lastPrice)
-
-        # place limit sell order
-        # commission fee + spread fee
-        buySellValue = buySellValue * (1 - 0.002)
-        limitSellData = self.apiCall(lambda: self.client.order_limit_sell(symbol=pair, quantity=self.getCeilingVal(pair, buySellValue), price=atPrice))
-        sellAt = round(float(limitSellData['price']), 2)
-        sellValue = round(float(limitSellData['origQty']) * float(lastPrice), 2)
-        buyOrSellorder = limitSellData['side']
-        # send reports
-        self.sendReports(3, date, sellAt, sellValue, assetTicker, "N/A", "LIMIT "+buyOrSellorder)
+        self.sendSheet(5, 1, balanceReport)
+        self.sendTel(4, balanceReport)
+        self.sendTerminal(4)
 
 
     # dip alert
@@ -227,13 +264,12 @@ class Binance():
                 if stamp not in self.historyStamps:
                     self.historyStamps.append(stamp)
 
-                    # Buy coin/token on -% and sell higher
-                    sellAtPrice = round(price * (1 + self.sellLimitPer), 2)
-                    self.buyLimitSell(symbol, self.dipInvestment, sellAtPrice, percentage, price)
+                    # request orders
+                    self.buyMarket(3, 2, symbol, self.dipInvestment, 2)
+                    self.limitSell(4, 3, symbol, self.dipInvestment, price)
 
-                    # just notify on telegram about possible dip, DO NOT BUY
-                    # telegram_send.send(messages=["***DIP ALERT TRIGGERED***\n\n"+str(symbol[:-4])+"\n"+"Price: "+str(price)+"\n"+str(percentage)+"%\n\n"+now[:19]])
-
+                    # # just notify on telegram about possible dip, DO NOT BUY
+                    # self.sendTel(6, symbol[:-4], price, percentage)
 
         # remove history stamps from previous month
         if len(self.historyStamps) != 0:
@@ -249,23 +285,27 @@ if __name__ == "__main__":
     # bot.getPercentage()
     # bot.getLotSize()
     # bot.spotWalletBalance()
-    # bot.buyMarket(bot.pair, bot.stableValue)
-    # bot.sellMarket(bot.pair, bot.stableValue)
-    # bot.buyLimitSell()
+    # bot.buyMarket(0, 0, bot.pair_1, bot.stableValue_1)
+    # bot.buyMarket(1, 0, bot.pair_2, bot.stableValue_2)
+    # bot.sellMarket(2, 1, bot.sellPair, bot.sellValueOrder)
+    # bot.limitSell()
     # bot.dipAlert()
 
 
-    #spot wallet
-    schedule.every().day.at(bot.walletTime).do(bot.spotWalletBalance)
-    
-    # market buy order
-    schedule.every().day.at(bot.buyTime).do(bot.buyMarket, bot.pair, bot.stableValue)
+    # market buy order_1
+    schedule.every().day.at(bot.buyTime_1).do(bot.buyMarket, 0, 0, bot.pair_1, bot.stableValue_1)
 
-    # market sell order
-    # schedule.every().day.at(bot.sellTime).do(bot.sellMarket, bot.pair, bot.stableValue)
+    # # market buy order_2
+    # schedule.every().day.at(bot.buyTime_2).do(bot.buyMarket, 1, 0, bot.pair_2, bot.stableValue_2)
+
+    # # market sell order
+    # schedule.every().day.at(bot.sellTime).do(bot.sellMarket, 2, 1, bot.sellPair, bot.sellValueOrder)
 
     # dip alert
     schedule.every(bot.alertTime).minutes.do(bot.dipAlert)
+
+    #spot wallet
+    schedule.every().day.at(bot.walletTime).do(bot.spotWalletBalance)
 
 
     while True:
