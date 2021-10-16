@@ -17,7 +17,7 @@ class Binance():
         self.ssId = '1e-I7RvxlIU3SvvW4i5OD3GCVPqj5Ka5anDbyUOc93oY'
 
         # coin/token pair_1 to buy for DCA
-        self.pair_1 = 'ETHBUSD'
+        self.pair_1 = 'ADABUSD'
         # stable coin value to buy pair 1
         self.stableValue_1 = 10.2
         # time to buy pair 1
@@ -31,7 +31,7 @@ class Binance():
         self.buyTime_2 = '01:30'
 
         # pair to sell
-        self.sellPair = 'BTCBUSD'
+        self.sellPair = 'ETHBUSD'
         # stable coin value to sell
         self.sellValueOrder = 10.1 # min 10.1
         # sell time
