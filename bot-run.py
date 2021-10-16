@@ -1,7 +1,6 @@
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
 from binance.helpers import round_step_size
-from telegram import message
 import config, telegram_send, schedule, gspread, time
 from datetime import datetime
 from os import system
