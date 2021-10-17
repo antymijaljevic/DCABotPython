@@ -1,5 +1,6 @@
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
+from requests.exceptions import Timeout
 from binance.helpers import round_step_size
 import config, telegram_send, schedule, gspread, time
 from datetime import datetime
@@ -20,26 +21,26 @@ class Binance():
         # stable coin value to buy pair 1
         self.stableValue_1 = 10.2
         # time to buy pair 1
-        self.buyTime_1 = '01:00'
+        self.buyTime_1 = '00:00'
 
         # coin/token pair_2 to buy for DCA
         self.pair_2 = 'BTCBUSD'
         # stable coin value to buy pair 2
         self.stableValue_2 = 10.2
         # time to buy pair 2
-        self.buyTime_2 = '01:30'
+        self.buyTime_2 = '00:00'
 
         # pair to sell
         self.sellPair = 'ETHBUSD'
         # stable coin value to sell
         self.sellValueOrder = 10.1 # min 10.1
         # sell time
-        self.sellTime = '01:00'
+        self.sellTime = '00:00'
 
         # list of coins/token to be alerted
         self.pairList = ['BTCBUSD', 'ETHBUSD', 'SOLBUSD', 'LINKBUSD', 'DOTBUSD', 'BNBBUSD']
         # investment on dip
-        self.dipInvestment = 1000
+        self.dipInvestment = 2000
         # alert percentage
         self.alertPer = -10
         # sell limit percentage
@@ -65,9 +66,12 @@ class Binance():
                 self.sendSheet(6, 2, e.status_code, e.message)
                 self.sendTel(5, e.status_code, e.message)
                 self.sendTerminal(5, e.status_code, e.message)
-
-                # try every 5 min
-                time.sleep(300)
+                time.sleep(500)
+            except Timeout as t:
+                self.sendSheet(6, 4, t)
+                self.sendTel(7, t)
+                self.sendTerminal(6, t)
+                time.sleep(60)
 
         return response
 
@@ -87,8 +91,9 @@ class Binance():
         sheetReports =[
             [p_1, p_2, p_3, p_4, p_5, p_6, str(p_7)+"%", str(p_8)], # buying orders 1, 2, selling orders, dip buy market
             [str(p_1)+"\n"+now[:19]], # spot wallet report
-            ["CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19]], # error loger
-            [p_1, p_2, p_3, p_4, p_5] # limit sell order
+            ["CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19]], # error loger binance exceptions
+            [p_1, p_2, p_3, p_4, p_5], # limit sell order
+            ["ERROR: "+str(p_1)+"\n\n"+now[:19]] # requests exceptions
         ]
 
         # append report to sheet
@@ -106,7 +111,8 @@ class Binance():
             ["***DIP LIMIT SELL ORDER FULFILLED***\n\nCoin/Token: "+str(p_1)+"\nSell at: "+str(p_2)+"$\n"+"Selling value: "+str(p_3)+"\n\n"+str(p_4)], # dip limit sell order
             ["***SPOT WALLET BALANCE***\n\n"+str(p_1)+"\n"+now[:19]], # spot wallet report
             ["CODE: "+str(p_1)+"\n\nSERVER MESSAGE: "+str(p_2)+"\n\n"+now[:19]], # error loger
-            ["***DIP ALERT TRIGGERED***\n\n"+str(p_1)+"\n"+"Price: "+str(p_2)+"$\n"+str(p_3)+"%\n\n"+now[:19]] # dip alert
+            ["***DIP ALERT TRIGGERED***\n\n"+str(p_1)+"\n"+"Price: "+str(p_2)+"$\n"+str(p_3)+"%\n\n"+now[:19]], # dip alert
+            ["ERROR: "+str(p_1)+"\n\n"+now[:19]] # requests exceptions
         ]
 
         telegram_send.send(messages=telegramReports[reportNum])
@@ -121,7 +127,8 @@ class Binance():
             str(p_1)+" DIP MARKET BUY ORDER EXECUTED ... "+str(p_2), # dip buy market order
             str(p_1)+" DIP LIMIT SELL ORDER EXECUTED ... "+str(p_2), # dip limit sell order
             "SPOT WALLET BALANCE HAS BEEN SENT ... "+now[:19], # spot wallet report
-            "CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19] # error loger
+            "CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19], # error loger
+            "ERROR: "+str(p_1)+"\n\n"+now[:19] # requests exceptions
         ]
 
         # program status
