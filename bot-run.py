@@ -51,7 +51,7 @@ class Binance():
 
         # time for the wallet and the alert
         self.walletTime = '12:00'
-        self.alertTime = 1 # in min
+        self.alertTime = 5 # in min
 
 
     # get response from API
@@ -286,6 +286,7 @@ class Binance():
 
 if __name__ == "__main__":
     bot = Binance()
+
     # FOR TESTING ONLY
     # bot.getCeilingVal()
     # bot.getPercentage()
@@ -295,25 +296,25 @@ if __name__ == "__main__":
     # bot.buyMarket(1, 0, bot.pair_2, bot.stableValue_2)
     # bot.sellMarket(2, 1, bot.sellPair, bot.sellValueOrder)
     # bot.limitSell()
-    bot.dipAlert()
+    # bot.dipAlert()
 
 
-    # # market buy order_1
-    # schedule.every().day.at(bot.buyTime_1).do(bot.buyMarket, 0, 0, bot.pair_1, bot.stableValue_1)
+    # market buy order_1
+    schedule.every().day.at(bot.buyTime_1).do(bot.buyMarket, 0, 0, bot.pair_1, bot.stableValue_1)
 
-    # # # market buy order_2
-    # # schedule.every().day.at(bot.buyTime_2).do(bot.buyMarket, 1, 0, bot.pair_2, bot.stableValue_2)
+    # # market buy order_2
+    # schedule.every().day.at(bot.buyTime_2).do(bot.buyMarket, 1, 0, bot.pair_2, bot.stableValue_2)
 
-    # # # market sell order
-    # # schedule.every().day.at(bot.sellTime).do(bot.sellMarket, 2, 1, bot.sellPair, bot.sellValueOrder)
+    # # market sell order
+    # schedule.every().day.at(bot.sellTime).do(bot.sellMarket, 2, 1, bot.sellPair, bot.sellValueOrder)
 
-    # # dip alert
-    # schedule.every(bot.alertTime).minutes.do(bot.dipAlert)
+    # dip alert
+    schedule.every(bot.alertTime).minutes.do(bot.dipAlert)
 
-    # #spot wallet
-    # schedule.every().day.at(bot.walletTime).do(bot.spotWalletBalance)
+    #spot wallet
+    schedule.every().day.at(bot.walletTime).do(bot.spotWalletBalance)
 
 
-    # while True:
-    #     schedule.run_pending()
-    #     time.sleep(1)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
