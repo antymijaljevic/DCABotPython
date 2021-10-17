@@ -2,3 +2,4 @@ python-binance
 telegram_send
 schedule
 gspread
+requests

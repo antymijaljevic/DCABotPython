@@ -1,6 +1,7 @@
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
 from requests.exceptions import Timeout
+from requests.exceptions import ConnectionError
 from binance.helpers import round_step_size
 import config, telegram_send, schedule, gspread, time
 from datetime import datetime
@@ -40,7 +41,7 @@ class Binance():
         # list of coins/token to be alerted
         self.pairList = ['BTCBUSD', 'ETHBUSD', 'SOLBUSD', 'LINKBUSD', 'DOTBUSD', 'BNBBUSD']
         # investment on dip
-        self.dipInvestment = 2000
+        self.dipInvestment = 1000
         # alert percentage
         self.alertPer = -10
         # sell limit percentage
@@ -50,28 +51,29 @@ class Binance():
 
         # time for the wallet and the alert
         self.walletTime = '12:00'
-        self.alertTime = 5 # in min
+        self.alertTime = 1 # in min
 
 
     # get response from API
     def apiCall(self, method):
-        # connect on binance exchange
-        self.client = Client(config.BINANCE_API_KEY, config.BINANCE_SECRET_KEY) #, testnet=True
-
         while True:
             try:
+                self.client = Client(config.BINANCE_API_KEY, config.BINANCE_SECRET_KEY, {"timeout": 1}) #, testnet=True
                 response = method()
                 break
-            except BinanceAPIException as e:
-                self.sendSheet(6, 2, e.status_code, e.message)
-                self.sendTel(5, e.status_code, e.message)
-                self.sendTerminal(5, e.status_code, e.message)
+            except ConnectionError:
+                print("No internet connection, trying again in 10 sec ...")
+                time.sleep(10)
+            except Timeout as timeoutErr:
+                self.sendSheet(6, 2, timeoutErr)
+                self.sendTel(5, timeoutErr)
+                self.sendTerminal(5, timeoutErr)
+                time.sleep(10)
+            except BinanceAPIException as Err:
+                self.sendSheet(6, 2, Err.message)
+                self.sendTel(5, Err.message)
+                self.sendTerminal(5, Err.message)
                 time.sleep(500)
-            except Timeout as t:
-                self.sendSheet(6, 4, t)
-                self.sendTel(7, t)
-                self.sendTerminal(6, t)
-                time.sleep(60)
 
         return response
 
@@ -91,9 +93,8 @@ class Binance():
         sheetReports =[
             [p_1, p_2, p_3, p_4, p_5, p_6, str(p_7)+"%", str(p_8)], # buying orders 1, 2, selling orders, dip buy market
             [str(p_1)+"\n"+now[:19]], # spot wallet report
-            ["CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19]], # error loger binance exceptions
+            ["ERROR: "+str(p_1)+"\n\n"+now[:19]], # error loger
             [p_1, p_2, p_3, p_4, p_5], # limit sell order
-            ["ERROR: "+str(p_1)+"\n\n"+now[:19]] # requests exceptions
         ]
 
         # append report to sheet
@@ -110,9 +111,8 @@ class Binance():
             ["***DIP MARKET BUY ORDER FULFILLED***\n\nBought at market price: "+str(p_1)+" $"+"\nCoin quantity: "+str(p_2)+" "+str(p_3)+"\nInvested: "+str(p_4)+ " $\nPercentage: "+str(p_5)+"%\n\n"+str(p_6)], # dip buy market order
             ["***DIP LIMIT SELL ORDER FULFILLED***\n\nCoin/Token: "+str(p_1)+"\nSell at: "+str(p_2)+"$\n"+"Selling value: "+str(p_3)+"\n\n"+str(p_4)], # dip limit sell order
             ["***SPOT WALLET BALANCE***\n\n"+str(p_1)+"\n"+now[:19]], # spot wallet report
-            ["CODE: "+str(p_1)+"\n\nSERVER MESSAGE: "+str(p_2)+"\n\n"+now[:19]], # error loger
+            ["***ERROR***\n\n"+str(p_1)+"\n\n"+now[:19]], # error loger
             ["***DIP ALERT TRIGGERED***\n\n"+str(p_1)+"\n"+"Price: "+str(p_2)+"$\n"+str(p_3)+"%\n\n"+now[:19]], # dip alert
-            ["ERROR: "+str(p_1)+"\n\n"+now[:19]] # requests exceptions
         ]
 
         telegram_send.send(messages=telegramReports[reportNum])
@@ -127,8 +127,7 @@ class Binance():
             str(p_1)+" DIP MARKET BUY ORDER EXECUTED ... "+str(p_2), # dip buy market order
             str(p_1)+" DIP LIMIT SELL ORDER EXECUTED ... "+str(p_2), # dip limit sell order
             "SPOT WALLET BALANCE HAS BEEN SENT ... "+now[:19], # spot wallet report
-            "CODE: "+str(p_1)+"\nSERVER MESSAGE: "+str(p_2)+"\n"+now[:19], # error loger
-            "ERROR: "+str(p_1)+"\n\n"+now[:19] # requests exceptions
+            "ERROR: "+str(p_1)+" ... "+now[:19], # error loger
         ]
 
         # program status
@@ -281,12 +280,13 @@ class Binance():
         if len(self.historyStamps) != 0:
             if now[5:7] != self.historyStamps[0][-5:-3]:
                 self.historyStamps = []
+                
+        print('DIP ALERT STATUS ACTIVE ... '+now[:19])
 
 
 if __name__ == "__main__":
     bot = Binance()
     # FOR TESTING ONLY
-
     # bot.getCeilingVal()
     # bot.getPercentage()
     # bot.getLotSize()
@@ -295,25 +295,25 @@ if __name__ == "__main__":
     # bot.buyMarket(1, 0, bot.pair_2, bot.stableValue_2)
     # bot.sellMarket(2, 1, bot.sellPair, bot.sellValueOrder)
     # bot.limitSell()
-    # bot.dipAlert()
+    bot.dipAlert()
 
 
-    # market buy order_1
-    schedule.every().day.at(bot.buyTime_1).do(bot.buyMarket, 0, 0, bot.pair_1, bot.stableValue_1)
+    # # market buy order_1
+    # schedule.every().day.at(bot.buyTime_1).do(bot.buyMarket, 0, 0, bot.pair_1, bot.stableValue_1)
 
-    # # market buy order_2
-    # schedule.every().day.at(bot.buyTime_2).do(bot.buyMarket, 1, 0, bot.pair_2, bot.stableValue_2)
+    # # # market buy order_2
+    # # schedule.every().day.at(bot.buyTime_2).do(bot.buyMarket, 1, 0, bot.pair_2, bot.stableValue_2)
 
-    # # market sell order
-    # schedule.every().day.at(bot.sellTime).do(bot.sellMarket, 2, 1, bot.sellPair, bot.sellValueOrder)
+    # # # market sell order
+    # # schedule.every().day.at(bot.sellTime).do(bot.sellMarket, 2, 1, bot.sellPair, bot.sellValueOrder)
 
-    # dip alert
-    schedule.every(bot.alertTime).minutes.do(bot.dipAlert)
+    # # dip alert
+    # schedule.every(bot.alertTime).minutes.do(bot.dipAlert)
 
-    #spot wallet
-    schedule.every().day.at(bot.walletTime).do(bot.spotWalletBalance)
+    # #spot wallet
+    # schedule.every().day.at(bot.walletTime).do(bot.spotWalletBalance)
 
 
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    # while True:
+    #     schedule.run_pending()
+    #     time.sleep(1)
