@@ -262,15 +262,15 @@ class Binance():
         info = self.apiCall(lambda: self.client.get_ticker())
 
         # list assets below set minus precentage
-        for pair in info:                    
-            if pair['symbol'] in self.pairList and float(pair['priceChangePercent']) < self.alertPer:
-                symbol, percentage, price = pair['symbol'], round(float(pair['priceChangePercent']), 2), round(float(pair['lastPrice']), 2)
+        for pair in info: 
+            symbol, percentage, price = pair['symbol'], round(float(pair['priceChangePercent']), 2), round(float(pair['lastPrice']), 2)                   
+            if symbol in self.pairList and percentage < self.alertPer:
                 # create alert / buying / selling history
                 stamp = pair['symbol'] + now[:10]
                 if stamp not in self.historyStamps:
                     self.historyStamps.append(stamp)
 
-                    # request orders
+                    # make orders
                     self.buyMarket(3, 2, symbol, self.dipInvestment, 2)
                     self.limitSell(4, 3, symbol, self.dipInvestment, price)
 
