@@ -3,7 +3,7 @@ from binance.exceptions import BinanceAPIException
 from requests.exceptions import Timeout
 from requests.exceptions import ConnectionError
 from binance.helpers import round_step_size
-import config, telegram_send, schedule, gspread, time
+import config, telegram_send, schedule, gspread, time, json
 from datetime import datetime
 from os import system
 
@@ -11,11 +11,15 @@ from os import system
 class Binance():
     def __init__(self):
         #clear terminal
-        system('cls') # put 'clear' for linux server
+        system('clear') # put 'clear' for linux server
+        print("BINANCE BOT ... ACTIVATED")
         # spreadsheet credentials filename
         self.ssCredFile = 'sheet_credentials.json'
         # spreadsheet unique ID
         self.ssId = '1e-I7RvxlIU3SvvW4i5OD3GCVPqj5Ka5anDbyUOc93oY'
+
+        # buying history database
+        self.db_filename = 'orderDB.json'
 
         # coin/token pair_1 to buy for DCA
         self.pair_1 = 'ADABUSD'
@@ -46,8 +50,6 @@ class Binance():
         self.alertPer = -10
         # sell limit percentage
         self.sellLimitPer = 0.03
-        # buying history
-        self.historyStamps = []
 
         # time for the wallet and the alert
         self.walletTime = '12:00'
@@ -58,7 +60,7 @@ class Binance():
     def apiCall(self, method):
         while True:
             try:
-                self.client = Client(config.BINANCE_API_KEY, config.BINANCE_SECRET_KEY, {"timeout": 1}) #, testnet=True
+                self.client = Client(config.BINANCE_API_KEY, config.BINANCE_SECRET_KEY, {"timeout": 5}) #, testnet=True
                 response = method()
                 break
             except ConnectionError:
@@ -66,8 +68,8 @@ class Binance():
                 time.sleep(10)
             except Timeout as timeoutErr:
                 self.sendSheet(6, 2, timeoutErr)
-                self.sendTel(5, timeoutErr)
-                self.sendTerminal(5, timeoutErr)
+                # self.sendTel(5, timeoutErr)
+                # self.sendTerminal(5, timeoutErr)
                 time.sleep(10)
             except BinanceAPIException as Err:
                 self.sendSheet(6, 2, Err.message)
@@ -112,7 +114,7 @@ class Binance():
             ["***DIP LIMIT SELL ORDER FULFILLED***\n\nCoin/Token: "+str(p_1)+"\nSell at: "+str(p_2)+"$\n"+"Selling value: "+str(p_3)+"\n\n"+str(p_4)], # dip limit sell order
             ["***SPOT WALLET BALANCE***\n\n"+str(p_1)+"\n"+now[:19]], # spot wallet report
             ["***ERROR***\n\n"+str(p_1)+"\n\n"+now[:19]], # error loger
-            ["***DIP ALERT TRIGGERED***\n\n"+str(p_1)+"\n"+"Price: "+str(p_2)+"$\n"+str(p_3)+"%\n\n"+now[:19]], # dip alert
+            ["***DIP ALERT TRIGGERED***\n\n"+str(p_1)+"\n"+now[:19]], # dip alert
         ]
 
         telegram_send.send(messages=telegramReports[reportNum])
@@ -258,30 +260,36 @@ class Binance():
     def dipAlert(self):
         # remove history stamps from previous month
         now = str(datetime.now())
+        date = now[:10]
+        telReport = ''
         info = self.apiCall(lambda: self.client.get_ticker())
 
         # list assets below set minus precentage
         for pair in info: 
             symbol, percentage, price = pair['symbol'], round(float(pair['priceChangePercent']), 2), round(float(pair['lastPrice']), 2)                   
             if symbol in self.pairList and percentage < self.alertPer:
-                # create alert / buying / selling history
-                stamp = pair['symbol'] + now[:10]
-                if stamp not in self.historyStamps:
-                    self.historyStamps.append(stamp)
-
-                    # make orders
-                    self.buyMarket(3, 2, symbol, self.dipInvestment, 2)
-                    self.limitSell(4, 3, symbol, self.dipInvestment, price)
-
-                    # # just notify on telegram about possible dip, DO NOT BUY
-                    # self.sendTel(6, symbol[:-4], price, percentage)
-
-        # remove history stamps from previous month
-        if len(self.historyStamps) != 0:
-            if now[5:7] != self.historyStamps[0][-5:-3]:
-                self.historyStamps = []
                 
-        print('DIP ALERT STATUS ACTIVE ... '+now[:19])
+                # open json db and add pairs
+                with open(self.db_filename, "r+") as file:
+                    db_data = json.load(file)
+                    if date not in db_data:
+                        db_data[date] = []
+                    if symbol not in db_data[date]:
+                        db_data[date].append(symbol)
+                        db_data.update(db_data)
+                        file.seek(0)
+                        json.dump(db_data, file, indent=4, separators=(',',': '))
+                        
+                        # tel report collection
+                        telReport += "Pair: "+str(symbol[:-4])+"\nCurrent price: "+str(price)+"$\nPercentage: "+str(percentage)+"%\n\n"
+                        # make orders
+                        self.buyMarket(3, 2, symbol, self.dipInvestment, 2)
+                        self.limitSell(4, 3, symbol, self.dipInvestment, price)
+
+        # notify on telegram about possible dip, and show alert status
+        if len(telReport) > 0:
+            self.sendTel(6, telReport)
+        print('DIP ALERT STATUS ACTIVE ... '+date)
 
 
 if __name__ == "__main__":
