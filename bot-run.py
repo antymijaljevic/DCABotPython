@@ -68,8 +68,8 @@ class Binance():
                 time.sleep(10)
             except Timeout as timeoutErr:
                 self.sendSheet(6, 2, timeoutErr)
-                # self.sendTel(5, timeoutErr)
-                # self.sendTerminal(5, timeoutErr)
+                self.sendTel(5, timeoutErr)
+                self.sendTerminal(5, timeoutErr)
                 time.sleep(10)
             except BinanceAPIException as Err:
                 self.sendSheet(6, 2, Err.message)
