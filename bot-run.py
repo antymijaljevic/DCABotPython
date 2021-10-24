@@ -3,9 +3,10 @@ from binance.exceptions import BinanceAPIException
 from requests.exceptions import Timeout
 from requests.exceptions import ConnectionError
 from binance.helpers import round_step_size
-import config, telegram_send, schedule, gspread, time, json
+import config, telegram_send, schedule, gspread, json
 from datetime import datetime
 from os import system
+from time import sleep, time
 
 
 class Binance():
@@ -65,17 +66,17 @@ class Binance():
                 break
             except ConnectionError:
                 print("No internet connection, trying again in 10 sec ...")
-                time.sleep(10)
+                sleep(10)
             except Timeout as timeoutErr:
                 self.sendSheet(6, 2, timeoutErr)
                 self.sendTel(5, timeoutErr)
                 self.sendTerminal(5, timeoutErr)
-                time.sleep(10)
+                sleep(10)
             except BinanceAPIException as Err:
                 self.sendSheet(6, 2, Err.message)
                 self.sendTel(5, Err.message)
                 self.sendTerminal(5, Err.message)
-                time.sleep(500)
+                sleep(500)
 
         return response
 
@@ -325,4 +326,4 @@ if __name__ == "__main__":
 
     while True:
         schedule.run_pending()
-        time.sleep(1)
+        sleep(1)
