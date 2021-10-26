@@ -1,26 +1,32 @@
+    #  binance = {
+    #                 "symbol": "LINKBUSD",
+    #                 "orderId": 376772363,
+    #                 "orderListId": -1,
+    #                 "clientOrderId": "yFIxBC6F3WLKnQ7SbRcPpa",
+    #                 "transactTime": 1635111687221,
+    #                 "price": "0.00000000",
+    #                 "origQty": "0.34000000",
+    #                 "executedQty": "0.34000000",
+    #                 "cummulativeQuoteQty": "10.06060000",
+    #                 "status": "FILLED",
+    #                 "timeInForce": "GTC",
+    #                 "type": "MARKET",
+    #                 "side": "BUY",
+    #                 "fills": [
+    #                     {
+    #                         "price": "29.59000000",
+    #                         "qty": "0.34000000",
+    #                         "commission": "0.00034000",
+    #                         "commissionAsset": "LINK",
+    #                         "tradeId": 14704963
+    #                     }
+    #                 ]
+    #             }
+
 from datetime import datetime
-from os import system
-import time, json
-
-system('cls')
-now = str(datetime.now())
-# pairList = {now[:10]:['ADABUSD', 'BNBBUSD','ETHBUSD'], '2021-10-19':['LINKBUSD','BTCBUSD']}
-# newPairLIst = {'2021-10-20':['XRPBUSD','SOLBUSD']}
-
-filename = 'orderDB.json'
-new = "NECRO"
-
-
-with open(filename, "r+") as file:
-    data = json.load(file)
-    print(json.dumps(data, indent=4))
-
-    data['2021-10-18'].append(new)
-    
-    data.update(data)
-
-    file.seek(0)
-
-    json.dump(data, file, indent=4, separators=(',',': '))
-
-    print(json.dumps(data, indent=4))
+#at the start of the script:
+start_time = datetime.now()
+# ... some stuff ...
+# when you want to print the time elapsed so far:
+now_time = datetime.now()
+print(now_time - start_time)

@@ -4,15 +4,13 @@ from requests.exceptions import Timeout, ConnectionError
 from binance.helpers import round_step_size
 import config, telegram_send, schedule, gspread, json
 from datetime import datetime
-from time import time, sleep
-from os import system
+from time import sleep, strftime, localtime
+from os import system, name
 
 
 class Binance():
     def __init__(self):
-        #clear terminal
-        system('clear') # put 'clear' for linux server
-        print("BINANCE BOT ... ACTIVATED")
+        self.clear_screen()
         # spreadsheet credentials filename
         self.ssCredFile = 'sheet_credentials.json'
         # spreadsheet unique ID
@@ -54,6 +52,17 @@ class Binance():
         # time for the wallet and the alert
         self.walletTime = '12:00'
         self.alertTime = 5 # in min
+
+    def clear_screen(self):
+        """'cls' for windows and 'posix' for Linux and MacOS, 
+            clears terminal depends on a OS
+        """
+        if name == 'nt':
+            system('cls')
+        else:
+            system('clear')
+            
+        print("BINANCE BOT ... ACTIVATED")
 
 
     # get response from API
@@ -193,7 +202,7 @@ class Binance():
 
         # convert unix time
         unixTime = int(orderData['transactTime'] / 1000)
-        norTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(unixTime))
+        norTime = strftime("%Y-%m-%d %H:%M:%S", localtime(unixTime))
 
         # necessary info for the report
         date = norTime
@@ -222,7 +231,7 @@ class Binance():
 
         # convert unix time
         unixTime = int(limitSellData['transactTime'] / 1000)
-        norTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(unixTime))
+        norTime = strftime("%Y-%m-%d %H:%M:%S", localtime(unixTime))
 
         # necessary info for the report
         date = norTime
