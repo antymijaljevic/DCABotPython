@@ -49,10 +49,13 @@ class Binance():
         else:
             system('clear')
 
-        print("BINANCE BOT: ACTIVATED ... "+start_time[:19])
+        print("BINANCE BOT: Activated ... "+start_time[:19])
 
 
     def bot_active(self, start_time):
+        """
+            Time elapsed since initial bot
+        """
         new_time = datetime.now()
         time_elapsed = new_time - self.start_time
         days_passed = str(time_elapsed.days)
