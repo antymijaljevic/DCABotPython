@@ -27,7 +27,7 @@ class Binance():
 
         # DCA pair 1 setup. Pair, value to invest & when to buy
         self.pair_1 = 'ADABUSD'
-        self.stable_coin_value_1 = 10.1
+        self.stable_coin_value_1 = 10.2
         self.buying_time_1 = '00:00'
 
         # DCA pair 2 setup. Pair, value to invest & when to buy
@@ -36,7 +36,7 @@ class Binance():
         self.buying_time_2 = '00:00'
 
         # Script activity check
-        self.check_active = 1 # in minutes
+        self.check_active = 30 # in minutes
 
 
     def clear_screen(self, start_time):
@@ -58,11 +58,16 @@ class Binance():
         """
         new_time = datetime.now()
         time_elapsed = new_time - self.start_time
-        days_passed = str(time_elapsed.days)
-        minutes_passed = str(int(time_elapsed.seconds) // 60)
-        hours_passed = str(int(minutes_passed) // 60)
-        
-        print("BINANCE BOT: Time passed since the bot was activated >> {} Days {} Hours {} Minutes".format(days_passed, hours_passed, minutes_passed))
+        seconds_passed = int(time_elapsed.seconds)
+
+        day = seconds_passed // 86400
+        seconds_passed %= 86400
+        hour = seconds_passed // 3600
+        seconds_passed %= 3600
+        minutes = seconds_passed // 60
+        seconds_passed %= 60
+
+        print("BINANCE BOT: Time passed since activation > %s Days %s Hours %s Minutes %s Seconds" % (day, hour, minutes, seconds_passed))
 
 
     def api_call(self, method):
