@@ -1,3 +1,5 @@
+# antymijaljevic@gmail.com
+
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
 from requests.exceptions import Timeout, ConnectionError
