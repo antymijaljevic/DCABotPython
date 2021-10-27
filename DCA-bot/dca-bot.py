@@ -21,8 +21,8 @@ class Binance():
         self.clear_screen(str(self.start_time))
 
         # spreadsheet credentials file & spreadsheet ID
-        ss_cred_file = 'sheet_credentials.json' # share spreadsheet with 'client_email' 
-        ss_unique_id = '12szlRmTFJ_-PEJPsKAqtbTVbzziv7R6k0eV_N3KZSlo'
+        ss_cred_file = 'xxx.json' # share spreadsheet with 'client_email' 
+        ss_unique_id = 'xxxxxxxxxxxxxxxxxx'
 
         spreadsheet_credentials = self.api_call(lambda: gspread.service_account(filename=ss_cred_file))
         self.spreadsheet_id = self.api_call(lambda:spreadsheet_credentials.open_by_key(ss_unique_id))
