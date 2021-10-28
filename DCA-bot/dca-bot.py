@@ -1,4 +1,8 @@
-# antymijaljevic@gmail.com
+"""
+    antymijaljevic@gmail.com
+    Binance DCA Bot
+"""
+
 
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
@@ -21,8 +25,8 @@ class Binance():
         self.clear_screen(str(self.start_time))
 
         # spreadsheet credentials file & spreadsheet ID
-        ss_cred_file = 'xxx.json' # share spreadsheet with 'client_email' 
-        ss_unique_id = 'xxxxxxxxxxxxxxxxxx'
+        ss_cred_file = 'xxxxxxxx.json' # share spreadsheet with 'client_email' 
+        ss_unique_id = 'xxxxxxxxxxxxxxxxxxxxx'
 
         spreadsheet_credentials = self.api_call(lambda: gspread.service_account(filename=ss_cred_file))
         self.spreadsheet_id = self.api_call(lambda:spreadsheet_credentials.open_by_key(ss_unique_id))
@@ -51,7 +55,7 @@ class Binance():
         else:
             system('clear')
 
-        print("BINANCE BOT: Activated ... "+start_time[:19])
+        print("BINANCE DCA BOT: Activated ... "+start_time[:19])
 
 
     def bot_active(self, start_time):
@@ -69,7 +73,7 @@ class Binance():
         minutes = seconds_passed // 60
         # seconds_passed %= 60
 
-        print("BINANCE BOT: Time passed since activation > %s Days %s Hours %s Minutes" % (day, hour, minutes))
+        print("BINANCE DCA BOT: Time passed since activation > %s Days %s Hours %s Minutes" % (day, hour, minutes))
 
 
     def api_call(self, method):
@@ -149,7 +153,7 @@ class Binance():
         self.sheet_number = self.spreadsheet_id.get_worksheet(sheetNum) 
         self.sheet_number.append_row([date, filled_at, invested, commission, asset_qty, asset_ticker, str(asset_24_perc)+"%", buy_or_sell])
 
-        telegram_send.send(messages=["***DCA BUYING ORDER FULFILLED***\n\nBought at market price: "+str(filled_at)+" $"+"\nCoin quantity: "+str(asset_qty)+" "+str(asset_ticker)+"\nInvested: "+str(invested)+ " $\nPercentage: "+str(asset_24_perc)+"%\n\n"+str(date)])
+        telegram_send.send(messages=["***DCA BUYING ORDER FULFILLED***\n\nFilled at market price: "+str(filled_at)+" $"+"\nCoin quantity: "+str(asset_qty)+" "+str(asset_ticker)+"\nInvested: "+str(invested)+ " $\nPercentage: "+str(asset_24_perc)+"%\n\n"+str(date)])
 
 
 if __name__ == "__main__":
@@ -161,8 +165,6 @@ if __name__ == "__main__":
     # bot.clear_screen()
     # bot.bot_active(bot.start_time)
     # bot.api_call()
-    # bot.google_sheet()
-    # bot.telegram()
     # bot.get_ceiling_value(bot.pair_1, bot.stable_coin_value_1)
     # bot.get_lot_size(bot.pair_1)
     # bot.request_buy_market(bot.pair_1, bot.stable_coin_value_1, 0)
