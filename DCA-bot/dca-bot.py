@@ -4,7 +4,7 @@ from binance.client import Client
 from binance.exceptions import BinanceAPIException
 from requests.exceptions import Timeout, ConnectionError
 from binance.helpers import round_step_size
-import config, telegram_send, schedule, gspread, json
+import config, telegram_send, schedule, gspread
 from datetime import datetime
 from time import sleep, strftime, localtime
 from os import system, name
@@ -67,9 +67,9 @@ class Binance():
         hour = seconds_passed // 3600
         seconds_passed %= 3600
         minutes = seconds_passed // 60
-        seconds_passed %= 60
+        # seconds_passed %= 60
 
-        print("BINANCE BOT: Time passed since activation > %s Days %s Hours %s Minutes %s Seconds" % (day, hour, minutes, seconds_passed))
+        print("BINANCE BOT: Time passed since activation > %s Days %s Hours %s Minutes" % (day, hour, minutes))
 
 
     def api_call(self, method):
