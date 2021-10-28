@@ -34,7 +34,7 @@ class Binance():
         self.db_filename = 'orderDB.json'
 
         # script activity check
-        self.check_active = 0.01
+        self.check_active = 30
 
         # check for a dip, set selling percentage
         self.check_dip = 0.45 # approx every 30 sec
