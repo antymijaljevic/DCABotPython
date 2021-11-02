@@ -66,12 +66,10 @@ class Binance():
         time_elapsed = new_time - self.start_time
         seconds_passed = int(time_elapsed.seconds)
 
-        day = seconds_passed // 86400
-        seconds_passed %= 86400
+        day = int(time_elapsed.days)
         hour = seconds_passed // 3600
         seconds_passed %= 3600
         minutes = seconds_passed // 60
-        # seconds_passed %= 60
 
         print("BINANCE DCA BOT: Time passed since activation > %s Days %s Hours %s Minutes" % (day, hour, minutes))
 
